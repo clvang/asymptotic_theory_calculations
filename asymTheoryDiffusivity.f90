@@ -70,7 +70,7 @@ tau = LOG(d_o / d_c)
 LHS = y_ofc / yo
 
 !prompt user to enter initial guess to start Newton iteration
-WRITE(*,*) "Enter an initial guess for epsilon (0.01-0.8): "
+WRITE(*,*) "Enter an initial guess for epsilon (0.01-0.1): "
 READ(*,*) eps_ig
 
 Fx_sanity = 1.  !initialize sanity check
@@ -87,7 +87,7 @@ DO WHILE ( ABS(Fx_sanity) > err_tol )
 
 	IF ( ABS(Fx_sanity) > err_tol) THEN 
 		WRITE(*,*) "!! INITIAL GUESS IS TOO FAR AWAY. TRY DIFFERENT INITIAL GUESS !!"
-		WRITE(*,*) "Enter an initial guess for epsilon (0.01-0.8): "
+		WRITE(*,*) "Enter an initial guess for epsilon (0.01-0.1): "
 		READ(*,*) eps_ig	
 	END IF	
 

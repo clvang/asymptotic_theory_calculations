@@ -7,5 +7,4 @@
 0.622164639389262   	 !K, burning rate on onset of flame contraction [mm^2/s]
 2.261 		 !do_measured = initial droplet diameter measured [mm]
 0.20 		     !yo=initial low volatility mass fraction
-
 1e-20			 !err_tol = error tolerance for norms
