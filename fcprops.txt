@@ -1,0 +1,12 @@
+...................................................................................
+.    Header for input file containing experimental
+.	 measurements for dc, do, yo, p, etc...
+...................................................................................
+1.0				 !chamber pressure [atm]
+4.24572312619831      !dc_sq, drop diameter squared at onset of flame contraction [mm^2] 
+0.622164639389262   	 !K, burning rate on onset of flame contraction [mm^2/s]
+2.261 		 !do_measured = initial droplet diameter measured [mm]
+0.20 		     !yo=initial low volatility mass fraction
+
+0.08   	    	 !eps_ig = initial guess for epsilon
+1e-20			 !err_tol = error tolerance for norms
