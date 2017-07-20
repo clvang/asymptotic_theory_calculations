@@ -205,7 +205,7 @@ SUBROUTINE Fx_eval(tau, eps, LHS, Fx)
 				- 2. * EXP( -(tau/eps) / 4.  ) &
 				+ ( EXP( -(tau/eps) / 4. )/ PI ) * h_1minusIntegral
 	h_match = 1.0 + (tau/eps) + eps * ( 4. + (tau/eps) + (3./2.)*(tau**2. / eps**2.) )
-	Fx  = 1.0 + H_0minus + eps * h_1minus + (H0minus/eps) + &
+	Fx  = 1.0 + h_0minus + eps * h_1minus + (H0minus/eps) + &
 		H1minus + eps * H2minus - h_match - LHS
 END SUBROUTINE Fx_eval
 
