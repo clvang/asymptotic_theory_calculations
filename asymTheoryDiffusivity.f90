@@ -11,9 +11,10 @@ PROGRAM asymTheoryDiffusivity
 !
 IMPLICIT NONE
 
-REAL :: dc_sq, K, do_measured, p, yo, d_c, y_ofc, percent_increase, &
+! INTEGER, PARAMTER :: DP = SELECTED_REAL_KIND(14)
+REAL(8) :: dc_sq, K, do_measured, p, yo, d_c, y_ofc, percent_increase, &
 d_o, tau, LHS, epsilon, eps_ig, D, err_tol, EuNormFx
-REAL, DIMENSION(6) :: fc_props
+REAL(8), DIMENSION(6) :: fc_props
 CHARACTER(len=11) :: filename
 CHARACTER(len=100) :: junk
 INTEGER :: i, status
@@ -101,15 +102,15 @@ END PROGRAM asymTheoryDiffusivity
 
 SUBROUTINE NewtonSolve(tau, LHS, eps_ig, epsilon, err_tol, EuNormFx)
 	IMPLICIT NONE 
-	REAL, INTENT(IN) :: tau, LHS, eps_ig, err_tol
-	REAL, INTENT(OUT) :: epsilon, EuNormFx
-	REAL :: FTOL, XTOL, DX, &
+	REAL(8), INTENT(IN) :: tau, LHS, eps_ig, err_tol
+	REAL(8), INTENT(OUT) :: epsilon, EuNormFx
+	REAL(8) :: FTOL, XTOL, DX, &
 	lambda, DxKbar, temp, eps_bar, Fxbar, &
 	theta, EunormDxKbar, EunormDxK, eps_old, DxK
 
-	REAL :: Fx, Dfx, eps
+	REAL(8) :: Fx, Dfx, eps
 	
-	REAL, PARAMETER :: PI = 3.1415927
+	REAL(8), PARAMETER :: PI = 3.1415927
 
 	INTEGER :: l, lmax, kmax, k 
 
@@ -168,7 +169,8 @@ SUBROUTINE NewtonSolve(tau, LHS, eps_ig, epsilon, err_tol, EuNormFx)
 			WRITE(*,70) k, EuNormFx
 			70 FORMAT(' ',"iteration count: " I3, "   function residual:" ES14.6)			
 			
-			IF ( (EuNormFx <= FTOL) .OR. (DX <= XTOL) .OR. (k > kmax) ) EXIT
+			! IF ( (EuNormFx <= FTOL) .OR. (DX <= XTOL) .OR. (k > kmax) ) EXIT
+			IF ( (EuNormFx <= FTOL) .OR. (k > kmax) ) EXIT
 
 		END DO newtonIterates
 	END IF 
@@ -180,10 +182,10 @@ END SUBROUTINE NewtonSolve
 SUBROUTINE Fx_eval(tau, eps, LHS, Fx)
 	IMPLICIT NONE
 
-	REAL, PARAMETER :: PI = 3.1415927
-	REAL, INTENT(IN) :: tau, eps, LHS
-	REAL, INTENT(OUT) :: Fx
-	REAL :: H0minus, H1minus, H2minus, h_0minus, h_1minusIntegral, &
+	REAL(8), PARAMETER :: PI = 3.1415927
+	REAL(8), INTENT(IN) :: tau, eps, LHS
+	REAL(8), INTENT(OUT) :: Fx
+	REAL(8) :: H0minus, H1minus, H2minus, h_0minus, h_1minusIntegral, &
 	h_1minus, h_match, Dfx
 
 	!define parts of asymptotic equation that do not depend on epsilon
@@ -213,9 +215,9 @@ END SUBROUTINE Fx_eval
 SUBROUTINE Dfx_eval(tau, eps, Dfx)
 	IMPLICIT NONE 
 
-	REAL, PARAMETER :: PI = 3.1415927
-	REAL, INTENT(IN) :: tau, eps 
-	REAL, INTENT(OUT) :: Dfx
+	REAL(8), PARAMETER :: PI = 3.1415927
+	REAL(8), INTENT(IN) :: tau, eps 
+	REAL(8), INTENT(OUT) :: Dfx
 
 	!be careful not to change anything here!
 	Dfx = EXP( -tau/(4*eps) ) * ( -2. * ( -EXP(tau/(4*eps))*SQRT(PI)*(6.+44*eps**2 + 9*tau) &
