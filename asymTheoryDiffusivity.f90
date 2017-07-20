@@ -167,7 +167,7 @@ SUBROUTINE NewtonSolve(tau, LHS, eps_ig, epsilon, err_tol, EuNormFx)
 			EuNormFx = SQRT( (Fx)**2 )	
 
 			WRITE(*,70) k, EuNormFx
-			70 FORMAT(' ',"iteration count: " I3, "   function residual:" ES14.6)			
+			70 FORMAT(' ',"iteration count:" I3, "   function residual:" ES14.6)			
 			
 			! IF ( (EuNormFx <= FTOL) .OR. (DX <= XTOL) .OR. (k > kmax) ) EXIT
 			IF ( (EuNormFx <= FTOL) .OR. (k > kmax) ) EXIT
