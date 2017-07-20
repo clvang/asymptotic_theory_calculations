@@ -8,5 +8,4 @@
 2.261 		 !do_measured = initial droplet diameter measured [mm]
 0.20 		     !yo=initial low volatility mass fraction
 
-0.08   	    	 !eps_ig = initial guess for epsilon
 1e-20			 !err_tol = error tolerance for norms
