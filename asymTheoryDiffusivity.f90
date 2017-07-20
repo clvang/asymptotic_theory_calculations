@@ -57,7 +57,7 @@ ELSE
 ENDIF openif
 
 d_c    = SQRT(dc_sq)   !drop diameter at onset of flame contraction [mm]
-y_ofc = 1. 			  !mass fraction of low volatility comp at onset of fc
+y_ofc = 1. 			   !mass fraction of low volatility comp at onset of fc
 
 IF (p == 1) THEN
 	percent_increase = 0.055
@@ -73,7 +73,7 @@ LHS = y_ofc / yo
 WRITE(*,*) "Enter an initial guess for epsilon (0.01-0.1): "
 READ(*,*) eps_ig
 
-EuNormFx = 1.  !initialize function residual as sanity check
+EuNormFx = 1.  !initialize function residual (as sanity check)
 
 DO WHILE ( EuNormFx > err_tol )
 
@@ -122,7 +122,7 @@ SUBROUTINE NewtonSolve(tau, LHS, eps_ig, epsilon, err_tol, EuNormFx)
 	CALL Fx_eval(tau, eps, LHS, Fx)  			
 	CALL Dfx_eval(tau, eps, Dfx)
 
-	DX = 1			!initialize ||xk-xk-1||
+	DX = 1.0			!initialize norm between successive iterates ||x^k-x^(k-1)||
 
 	!Compute eps using Newton's Method with damping. Information on this
 	!particular method as well as some notation consistent with
@@ -132,7 +132,7 @@ SUBROUTINE NewtonSolve(tau, LHS, eps_ig, epsilon, err_tol, EuNormFx)
 		WRITE(*,60) eps
 		60 FORMAT("' ',Initial guess: " ES14.6)
 	ELSE
-		EuNormFx = SQRT( Fx**2 )  !initialize || fxk-fxk-1 ||
+		EuNormFx = SQRT( Fx**2 )  !initialize || fx^k - fx^(k-1) ||
 
 		newtonIterates : DO k = 0, kmax     
 			DxK = -Fx/Dfx
