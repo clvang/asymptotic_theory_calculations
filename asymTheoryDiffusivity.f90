@@ -12,7 +12,7 @@ PROGRAM asymTheoryDiffusivity
 IMPLICIT NONE
 
 REAL :: dc_sq, K, do_measured, p, yo, d_c, y_ofc, percent_increase, &
-d_o, tau, LHS, epsilon, eps_ig, D, err_tol, Fx_sanity
+d_o, tau, LHS, epsilon, eps_ig, D, err_tol, EuNormFx
 REAL, DIMENSION(6) :: fc_props
 CHARACTER(len=11) :: filename
 CHARACTER(len=100) :: junk
@@ -65,7 +65,7 @@ ELSE
 	percent_increase = 0.086
 ENDIF
 
-d_o = do_measured * (1. + percent_increase) !do accounting for droplet swelling
+d_o = do_measured * (1.0 + percent_increase) !do accounting for droplet swelling
 tau = LOG(d_o / d_c)
 LHS = y_ofc / yo
 
@@ -73,19 +73,15 @@ LHS = y_ofc / yo
 WRITE(*,*) "Enter an initial guess for epsilon (0.01-0.1): "
 READ(*,*) eps_ig
 
-Fx_sanity = 1.  !initialize sanity check
+EuNormFx = 1.  !initialize function residual as sanity check
 
-DO WHILE ( ABS(Fx_sanity) > err_tol )
+DO WHILE ( EuNormFx > err_tol )
 
-	CALL NewtonSolve(tau, LHS, eps_ig, epsilon, err_tol)
+	CALL NewtonSolve(tau, LHS, eps_ig, epsilon, err_tol, EuNormFx)
 	WRITE(*,30) epsilon
 	30 FORMAT(" The value of epsilon is....................." ES14.6)
 
-	CALL Fx_eval(tau, epsilon, LHS, Fx_sanity)
-	WRITE(*,40) Fx_sanity
-	40 FORMAT(" As a sanity check F(epsilon)=..............." ES14.6)
-
-	IF ( ABS(Fx_sanity) > err_tol) THEN 
+	IF ( EuNormFx > err_tol) THEN 
 		WRITE(*,*) "!! INITIAL GUESS IS TOO FAR AWAY. TRY DIFFERENT INITIAL GUESS !!"
 		WRITE(*,*) "Enter an initial guess for epsilon (0.01-0.1): "
 		READ(*,*) eps_ig	
@@ -93,20 +89,22 @@ DO WHILE ( ABS(Fx_sanity) > err_tol )
 
 END DO
 
-D = epsilon * K/ 8
+D = epsilon * K/ 8.0
 WRITE(*,50) D
 50 FORMAT(" The effective liquid diffusivity is........." ES14.6, " mm^2/s")
+WRITE(*,52) D*(1.0/1000.)**2.
+52 FORMAT(" The effective liquid diffusivity is........." ES14.6, " m^2/s")
 
 END PROGRAM asymTheoryDiffusivity
 
 
 
-SUBROUTINE NewtonSolve(tau, LHS, eps_ig, epsilon, err_tol)
+SUBROUTINE NewtonSolve(tau, LHS, eps_ig, epsilon, err_tol, EuNormFx)
 	IMPLICIT NONE 
 	REAL, INTENT(IN) :: tau, LHS, eps_ig, err_tol
-	REAL, INTENT(OUT) :: epsilon
+	REAL, INTENT(OUT) :: epsilon, EuNormFx
 	REAL :: FTOL, XTOL, DX, &
-	EuNormFx, lambda, DxKbar, temp, eps_bar, Fxbar, &
+	lambda, DxKbar, temp, eps_bar, Fxbar, &
 	theta, EunormDxKbar, EunormDxK, eps_old, DxK
 
 	REAL :: Fx, Dfx, eps
@@ -139,9 +137,6 @@ SUBROUTINE NewtonSolve(tau, LHS, eps_ig, epsilon, err_tol)
 		newtonIterates : DO k = 0, kmax     
 			DxK = -Fx/Dfx
 
-			! WRITE(*,62) Fx, Dfx 
-			! 62 FORMAT("Fx  :" ES14.6, " Dfx: " ES14.6)
-			
 			!Monotiniticty Test 
 			Monotinicity : DO l=0,lmax
 				IF (k == 0) THEN
@@ -168,16 +163,12 @@ SUBROUTINE NewtonSolve(tau, LHS, eps_ig, epsilon, err_tol)
 			DX = SQRT( (eps - eps_old)**2 )
 			CALL Fx_eval(tau, eps, LHS, Fx)  			
 			CALL Dfx_eval(tau, eps, Dfx)
-			EuNormFx = SQRT( (Fx)**2 )
+			EuNormFx = SQRT( (Fx)**2 )	
 
-			! WRITE(*,64) lambda, DX, EuNormFx, DxK, eps, eps_old
-			! 64 FORMAT("lambda  :" ES14.6, " DX: " ES14.6, &
-			! 	"  EuNormFx:" ES14.6, "  DxK:" ES14.6, &
-			! 	"  eps:" ES14.6, "  eps_old:" ES14.6)
+			WRITE(*,70) k, EuNormFx
+			70 FORMAT(' ',"iteration count: " I3, "   function residual:" ES14.6)			
 			
 			IF ( (EuNormFx <= FTOL) .OR. (DX <= XTOL) .OR. (k > kmax) ) EXIT
-			WRITE(*,70) k 
-			70 FORMAT(' ',"iteration number: " I3)
 
 		END DO newtonIterates
 	END IF 
@@ -196,9 +187,9 @@ SUBROUTINE Fx_eval(tau, eps, LHS, Fx)
 	h_1minus, h_match, Dfx
 
 	!define parts of asymptotic equation that do not depend on epsilon
-	H0minus = ( EXP(3*tau) - 1. ) / 3.
-	H1minus = ( EXP(3*tau) + 2. ) / 3.
-	H2minus = (22. / 9.) +  ( 14.-24*tau )*EXP(3*tau) / 9.
+	H0minus = ( EXP(3.*tau) - 1. ) / 3.
+	H1minus = ( EXP(3.*tau) + 2. ) / 3.
+	H2minus = (22. / 9.) +  ( 14.-24.*tau )*EXP(3*tau) / 9.
 
 	!define parts of asymptotic equation that depend on epsilon
 	h_0minus = ((tau/eps)/2.) * ( 1. + ERF( SQRT(tau/eps)/2. ) ) &
@@ -206,15 +197,15 @@ SUBROUTINE Fx_eval(tau, eps, LHS, Fx)
 				+ SQRT( (tau/eps)/PI ) * EXP( -(tau/eps) / 4. )
 	!NOTE: h_1minusIntegral is the alernate form of the integral in
 	!      the variable h_1minus, as given by Mathematica
-	h_1minusIntegral = (1./2.) * SQRT(PI) * SQRT(tau/eps) * ( -4. + (3*tau/eps) ) &
+	h_1minusIntegral = (1./2.) * SQRT(PI) * SQRT(tau/eps) * ( -4. + (3.*tau/eps) ) &
 				- (1./4.)*EXP( (tau/eps) / 4. ) * PI & 
-				* ( 8. + ( tau*(2*eps + 3*tau) ) / eps**2 ) &
+				* ( 8. + ( tau*(2.*eps + 3.*tau) ) / eps**2. ) &
 				* ERFC( (tau/eps) / 2. )
-	h_1minus = 4. + (tau/eps) + ( 3.*(tau/eps)**2 / 2. ) &
-				- 2 * EXP( -(tau/eps) / 4.  ) &
+	h_1minus = 4. + (tau/eps) + ( 3.*(tau/eps)**2. / 2. ) &
+				- 2. * EXP( -(tau/eps) / 4.  ) &
 				+ ( EXP( -(tau/eps) / 4. )/ PI ) * h_1minusIntegral
-	h_match = 1 + (tau/eps) + eps * ( 4 + (tau/eps) + (3./2.)*(tau**2 / eps**2) )
-	Fx  = 1 + H_0minus + eps * h_1minus + (H0minus/eps) + &
+	h_match = 1.0 + (tau/eps) + eps * ( 4. + (tau/eps) + (3./2.)*(tau**2. / eps**2.) )
+	Fx  = 1.0 + H_0minus + eps * h_1minus + (H0minus/eps) + &
 		H1minus + eps * H2minus - h_match - LHS
 END SUBROUTINE Fx_eval
 
