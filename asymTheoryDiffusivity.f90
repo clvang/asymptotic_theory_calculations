@@ -13,11 +13,12 @@ IMPLICIT NONE
 
 ! INTEGER, PARAMTER :: DP = SELECTED_REAL_KIND(14)
 REAL(8) :: dc_sq, K, do_measured, p, yo, d_c, y_ofc, percent_increase, &
-d_o, tau, LHS, epsilon, eps_ig, D, err_tol, EuNormFx
+d_o, tau, LHS, epsilon, eps_ig, D, err_tol, EuNormFx, ep_min, ep_max
 REAL(8), DIMENSION(6) :: fc_props
+REAL(8), DIMENSION(500) :: fvalues, ep_vals
 CHARACTER(len=11) :: filename
 CHARACTER(len=100) :: junk
-INTEGER :: i, status
+INTEGER :: i, status, N
 
 !Get the file name and echo back to user
 ! WRITE(*,*) "Enter the name of the file with experimental measurements: "
@@ -95,6 +96,22 @@ WRITE(*,50) D
 50 FORMAT(" The effective liquid diffusivity is........." ES14.6, " mm^2/s")
 WRITE(*,52) D*(1.0/1000.)**2.
 52 FORMAT(" The effective liquid diffusivity is........." ES14.6, " m^2/s")
+
+!plot function around epsilon as a visual check for multiple solutions nearby
+ep_min = epsilon / 4.
+ep_max = epsilon*10
+N      = 500
+
+CALL linspace(ep_vals, ep_min, ep_max, N)
+
+OPEN(UNIT=10,FILE='asymTheoryData')
+DO i=1,N 
+	CALL Fx_eval(tau, ep_vals(i), LHS, fvalues(i) )  
+	WRITE(10,*) ep_vals(i), fvalues(i)
+END DO
+CLOSE(UNIT = 10)
+
+CALL SYSTEM('gnuplot -p data_plot.plt')
 
 END PROGRAM asymTheoryDiffusivity
 
@@ -174,14 +191,11 @@ SUBROUTINE NewtonSolve(tau, LHS, eps_ig, epsilon, err_tol, EuNormFx)
 
 		END DO newtonIterates
 	END IF 
-
 	epsilon = eps
-
 END SUBROUTINE NewtonSolve
 
 SUBROUTINE Fx_eval(tau, eps, LHS, Fx)
 	IMPLICIT NONE
-
 	REAL(8), PARAMETER :: PI = 3.1415927
 	REAL(8), INTENT(IN) :: tau, eps, LHS
 	REAL(8), INTENT(OUT) :: Fx
@@ -214,7 +228,6 @@ END SUBROUTINE Fx_eval
 
 SUBROUTINE Dfx_eval(tau, eps, Dfx)
 	IMPLICIT NONE 
-
 	REAL(8), PARAMETER :: PI = 3.1415927
 	REAL(8), INTENT(IN) :: tau, eps 
 	REAL(8), INTENT(OUT) :: Dfx
@@ -225,8 +238,26 @@ SUBROUTINE Dfx_eval(tau, eps, Dfx)
 		+ 2*EXP( (tau/4.)*( 12.+(1./eps) ) )*SQRT(PI)*( 3. + 2*eps**2 * (-7. + 12*tau) ) ) & 
 		- 18*EXP ( tau/(4*eps) )*SQRT(PI)*tau*ERF( SQRT(tau/eps) / 2. ) & 
 		- 9*EXP( tau/(4*eps) )*SQRT(PI)*( 8*eps**2 - 3*tau**2 )*ERFC( SQRT(tau/eps)/2. )  ) 
-
 END SUBROUTINE Dfx_eval
+
+
+SUBROUTINE linspace(varArray, lowLimit, upLimit, numPts) 
+	IMPLICIT NONE
+
+	REAL(8), INTENT(OUT), DIMENSION(numPts) :: varArray
+	REAL(8), INTENT(IN) :: lowLimit, upLimit
+	INTEGER, INTENT(IN) :: numPts
+	INTEGER :: i
+	REAL(8) :: intervalSize
+
+	intervalSize = (upLimit - lowLimit) / numPts
+	varArray(1) = lowLimit
+	DO i = 2, numPts-1
+		varArray(i) = varArray(i-1) + intervalSize
+	END DO
+	varArray(1) = lowLimit
+	varArray(numPts) = upLimit
+END SUBROUTINE linspace
 
 
 
