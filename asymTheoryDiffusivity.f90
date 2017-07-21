@@ -12,10 +12,11 @@ PROGRAM asymTheoryDiffusivity
 IMPLICIT NONE
 
 ! INTEGER, PARAMTER :: DP = SELECTED_REAL_KIND(14)
-REAL(8) :: dc_sq, K, do_measured, p, yo, d_c, y_ofc, percent_increase, &
-d_o, tau, LHS, epsilon, eps_ig, D, err_tol, EuNormFx, ep_min, ep_max
-REAL(8), DIMENSION(6) :: fc_props
-REAL(8), DIMENSION(700) :: fvalues, ep_vals
+REAL(KIND=8) :: dc_sq, K, do_measured, p, yo, d_c, y_ofc, percent_increase, &
+d_o, tau, LHS, epsilon, D, err_tol, EuNormFx, ep_min, ep_max, dfdo
+REAL(KIND=8), DIMENSION(6) :: fc_props
+REAL(KIND=8), DIMENSION(50) :: ig_vector
+REAL(KIND=8), DIMENSION(700) :: fvalues, ep_vals
 CHARACTER(len=11) :: filename
 CHARACTER(len=100) :: junk
 INTEGER :: i, status, N
@@ -71,63 +72,137 @@ d_o = do_measured * (1.0 + percent_increase) !do accounting for droplet swelling
 tau = LOG(d_o / d_c)
 LHS = y_ofc / yo
 
-!prompt user to enter initial guess to start Newton iteration
-WRITE(*,*) "Enter an initial guess for epsilon (0.01-0.1): "
-READ(*,*) eps_ig
+
+ep_min = 0.01 
+ep_max = 0.5
+N = 50
+!create array filled with intial guesses
+CALL linspace(ig_vector, ep_min, ep_max, N)
 
 EuNormFx = 1.  !initialize function residual (as sanity check)
-
+i = 1
 DO WHILE ( EuNormFx > err_tol )
 
-	CALL NewtonSolve(tau, LHS, eps_ig, epsilon, err_tol, EuNormFx)
-	WRITE(*,30) epsilon
-	30 FORMAT(" The value of epsilon is....................." ES14.6)
+	WRITE(*,22) ig_vector(i)
+	22 FORMAT(' ','============ Initial guess: ' ES10.3,'=============')
 
-	IF ( EuNormFx > err_tol) THEN 
-		WRITE(*,*) "!! INITIAL GUESS IS TOO FAR AWAY. TRY DIFFERENT INITIAL GUESS !!"
-		WRITE(*,*) "Enter an initial guess for epsilon (0.01-0.1): "
-		READ(*,*) eps_ig	
-	END IF	
+	CALL NewtonSolve(tau, LHS, ig_vector(i), epsilon, err_tol, EuNormFx)
 
+	IF ( i > N ) WRITE(*,*) "!! NUMBER OF INITIAL GUESSES EXHAUSTED !!"
+	i = i + 1
 END DO
 
+WRITE(*,*) " ====================================================================="
+WRITE(*,30) epsilon
+30 FORMAT(" || The value of epsilon is....................." ES14.6, "        ||")
 D = epsilon * K/ 8.0
 WRITE(*,50) D
-50 FORMAT(" The effective liquid diffusivity is........." ES14.6, " mm^2/s")
+50 FORMAT(" || The effective liquid diffusivity is........." ES14.6, " mm^2/s ||")
 WRITE(*,52) D*(1.0/1000.)**2.
-52 FORMAT(" The effective liquid diffusivity is........." ES14.6, " m^2/s")
+52 FORMAT(" || The effective liquid diffusivity is........." ES14.6, " m^2/s  ||")
+WRITE(*,*) " ====================================================================="
 
 !plot function around epsilon as a visual check for multiple solutions nearby
 ep_min = epsilon / 4.
 ep_max = epsilon*100
 N      = 700
-
 CALL linspace(ep_vals, ep_min, ep_max, N)
-
 OPEN(UNIT=10,FILE='asymTheoryData')
 DO i=1,N 
 	CALL Fx_eval(tau, ep_vals(i), LHS, fvalues(i) )  
 	WRITE(10,*) ep_vals(i), fvalues(i)
 END DO
 CLOSE(UNIT = 10)
-
+!call gnuplot through shell to plot results
 CALL SYSTEM('gnuplot -p data_plot.plt')
 
+
+! !calculate uncertainties in eff diffusivity using TSM
+! !calculate df_do
+! CALL partialF_partial_do(d_o, dfdo, d_c, yo, y_ofc, err_tol)
+
+
 END PROGRAM asymTheoryDiffusivity
+
+! SUBROUTINE partialF_partial_do(d_o, dfdo_out, d_c, yo, y_ofc, err_tol)
+! 	IMPLICIT NONE
+! 	REAL(KIND = 8), INTENT(IN) :: d_o, d_c, yo, y_ofc, err_tol
+! 	REAL(KIND = 8), INTENT(OUT) :: dfdo_out
+! 	REAL(KIND = 8), DIMENSION(4) :: delta_do, do_1, do_2, tau_1, tau_2, df_do
+! 	REAL(KIND = 8) :: p_incr, successive_norm
+! 	INTEGER :: i, N 
+
+! 	p_incr = 0.01
+! 	N = 4
+! 	DO i=1,N 
+! 		delta_do(i) = p_incr / ( i*2.0 )
+! 		do_1(i) = d_o + delta_do(i) 
+! 		do_2(i) = d_o - delta_do(i)
+! 		tau_1(i) = LOG( do_1(i) / d_c )
+! 		tau_2(i) = LOG( do_2(i) / d_c )
+
+! 		CALL partialF_partial_x( do_1(i), do_2(i), d_c, yo, yo, delta_do(i), y_ofc, df_do(i), err_tol )
+! 	END DO 
+
+! 	DO i=2,N
+! 		successive_norm = ABS( df_do(i) - df_do(i-1) )
+! 		WRITE(*,10) successive_norm
+! 		10 FORMAT(' ','Successive Norm: ', ES14.6)
+! 	END DO
+	
+! 	dfdo_out = df_do(N) 
+! 	WRITE(*,20) dfdo_out
+! 	20 FORMAT(' ','df_do approximately: ', ES14.6)
+
+! END SUBROUTINE partialF_partial_do
+
+
+! SUBROUTINE partialF_partial_x(do_1, do_2, d_c, yo_1, yo_2, delta_x, y_ofc, df_dx, err_tol)
+! 	IMPLICIT NONE 
+! 	REAL(KIND = 8), INTENT(IN) :: do_1, do_2, d_c, yo_1, yo_2, &
+! 	delta_x, y_ofc, err_tol
+! 	REAL(KIND = 8), INTENT(OUT) :: df_dx
+! 	REAL(KIND = 8) :: tau_1, tau_2, epsilon_1, epsilon_2, &
+! 	EuNormFx_1, EuNormFx_2, LHS_1, LHS_2, ep_min, ep_max
+! 	REAL(KIND=8), DIMENSION(100) :: ig_vector
+! 	INTEGER :: N, i
+
+! 	tau_1 = LOG(do_1 / d_c)
+! 	tau_2 = LOG(do_2 / d_c)
+! 	LHS_1 = y_ofc / do_1
+! 	LHS_2 = y_ofc / do_2
+
+! 	ep_min = 0.001 
+! 	ep_max = 0.5
+! 	N = 100
+! 	!create array filled with intial guesses
+! 	CALL linspace(ig_vector, ep_min, ep_max, N)
+
+! 	DO i=1,N 
+! 		CALL NewtonSolve(tau_1, LHS_1, ig_vector(i), epsilon_1, err_tol, EuNormFx_1)
+! 	END DO 
+
+! 	DO i=1,N 
+! 		CALL NewtonSolve(tau_2, LHS_2, ig_vector(i), epsilon_2, err_tol, EuNormFx_2)
+! 	END DO 
+
+! 	df_dx = (epsilon_2 - epsilon_1) / (2. * delta_x)		
+
+! END SUBROUTINE partialF_partial_x
 
 
 
 SUBROUTINE NewtonSolve(tau, LHS, eps_ig, epsilon, err_tol, EuNormFx)
 	IMPLICIT NONE 
-	REAL(8), INTENT(IN) :: tau, LHS, eps_ig, err_tol
-	REAL(8), INTENT(OUT) :: epsilon, EuNormFx
-	REAL(8) :: FTOL, XTOL, DX, &
+	REAL(KIND=8), INTENT(IN) :: tau, LHS, eps_ig, err_tol
+	REAL(KIND=8), INTENT(OUT) :: epsilon, EuNormFx
+	REAL(KIND=8) :: FTOL, XTOL, DX, &
 	lambda, DxKbar, temp, eps_bar, Fxbar, &
 	theta, EunormDxKbar, EunormDxK, eps_old, DxK
 
-	REAL(8) :: Fx, Dfx, eps
+	REAL(KIND=8) :: Fx, Dfx, eps
 	
-	REAL(8), PARAMETER :: PI = 3.1415927
+	REAL(KIND=8), PARAMETER :: PI = 3.1415927
 
 	INTEGER :: l, lmax, kmax, k 
 
@@ -196,10 +271,10 @@ END SUBROUTINE NewtonSolve
 
 SUBROUTINE Fx_eval(tau, eps, LHS, Fx)
 	IMPLICIT NONE
-	REAL(8), PARAMETER :: PI = 3.1415927
-	REAL(8), INTENT(IN) :: tau, eps, LHS
-	REAL(8), INTENT(OUT) :: Fx
-	REAL(8) :: H0minus, H1minus, H2minus, h_0minus, h_1minusIntegral, &
+	REAL(KIND=8), PARAMETER :: PI = 3.1415927
+	REAL(KIND=8), INTENT(IN) :: tau, eps, LHS
+	REAL(KIND=8), INTENT(OUT) :: Fx
+	REAL(KIND=8) :: H0minus, H1minus, H2minus, h_0minus, h_1minusIntegral, &
 	h_1minus, h_match, Dfx
 
 	!define parts of asymptotic equation that do not depend on epsilon
@@ -228,9 +303,9 @@ END SUBROUTINE Fx_eval
 
 SUBROUTINE Dfx_eval(tau, eps, Dfx)
 	IMPLICIT NONE 
-	REAL(8), PARAMETER :: PI = 3.1415927
-	REAL(8), INTENT(IN) :: tau, eps 
-	REAL(8), INTENT(OUT) :: Dfx
+	REAL(KIND=8), PARAMETER :: PI = 3.1415927
+	REAL(KIND=8), INTENT(IN) :: tau, eps 
+	REAL(KIND=8), INTENT(OUT) :: Dfx
 
 	!be careful not to change anything here!
 	Dfx = EXP( -tau/(4*eps) ) * ( -2. * ( -EXP(tau/(4*eps))*SQRT(PI)*(6.+44*eps**2 + 9*tau) &
@@ -244,11 +319,11 @@ END SUBROUTINE Dfx_eval
 SUBROUTINE linspace(varArray, lowLimit, upLimit, numPts) 
 	IMPLICIT NONE
 
-	REAL(8), INTENT(OUT), DIMENSION(numPts) :: varArray
-	REAL(8), INTENT(IN) :: lowLimit, upLimit
+	REAL(KIND=8), INTENT(OUT), DIMENSION(numPts) :: varArray
+	REAL(KIND=8), INTENT(IN) :: lowLimit, upLimit
 	INTEGER, INTENT(IN) :: numPts
 	INTEGER :: i
-	REAL(8) :: intervalSize
+	REAL(KIND=8) :: intervalSize
 
 	intervalSize = (upLimit - lowLimit) / numPts
 	varArray(1) = lowLimit
