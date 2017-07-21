@@ -15,7 +15,7 @@ IMPLICIT NONE
 REAL(8) :: dc_sq, K, do_measured, p, yo, d_c, y_ofc, percent_increase, &
 d_o, tau, LHS, epsilon, eps_ig, D, err_tol, EuNormFx, ep_min, ep_max
 REAL(8), DIMENSION(6) :: fc_props
-REAL(8), DIMENSION(500) :: fvalues, ep_vals
+REAL(8), DIMENSION(700) :: fvalues, ep_vals
 CHARACTER(len=11) :: filename
 CHARACTER(len=100) :: junk
 INTEGER :: i, status, N
@@ -99,8 +99,8 @@ WRITE(*,52) D*(1.0/1000.)**2.
 
 !plot function around epsilon as a visual check for multiple solutions nearby
 ep_min = epsilon / 4.
-ep_max = epsilon*10
-N      = 500
+ep_max = epsilon*100
+N      = 700
 
 CALL linspace(ep_vals, ep_min, ep_max, N)
 
