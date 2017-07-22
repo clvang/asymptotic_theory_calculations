@@ -13,7 +13,7 @@ IMPLICIT NONE
 
 ! INTEGER, PARAMTER :: DP = SELECTED_REAL_KIND(14)
 REAL(KIND=8) :: dc_sq, K, do_measured, p, yo, d_c, y_ofc, percent_increase, &
-d_o, tau, LHS, epsilon, D, err_tol, EuNormFx, ep_min, ep_max, dfdo
+d_o, tau, LHS, epsilon, D, err_tol, EuNormFx, ep_min, ep_max, dfdo, epsilon_bisect
 REAL(KIND=8), DIMENSION(6) :: fc_props
 REAL(KIND=8), DIMENSION(50) :: ig_vector
 REAL(KIND=8), DIMENSION(700) :: fvalues, ep_vals
@@ -54,9 +54,7 @@ openif : IF (status == 0) THEN
 
 	CLOSE(UNIT=1)
 ELSE
-
 	WRITE(*,*) 'Open of file NOT sucessful!'
-
 ENDIF openif
 
 d_c    = SQRT(dc_sq)   !drop diameter at onset of flame contraction [mm]
@@ -72,17 +70,15 @@ d_o = do_measured * (1.0 + percent_increase) !do accounting for droplet swelling
 tau = LOG(d_o / d_c)
 LHS = y_ofc / yo
 
-
+!!!!!!!!!!!!!!!!!!!!!!!!!! SOLUTION USING NEWTON'S METHOD !!!!!!!!!!!!!!!!!!!!!!!!!!
 ep_min = 0.01 
 ep_max = 0.5
 N = 50
 !create array filled with intial guesses
 CALL linspace(ig_vector, ep_min, ep_max, N)
-
 EuNormFx = 1.  !initialize function residual (as sanity check)
 i = 1
 DO WHILE ( EuNormFx > err_tol )
-
 	WRITE(*,22) ig_vector(i)
 	22 FORMAT(' ','============ Initial guess: ' ES10.3,'=============')
 
@@ -92,7 +88,7 @@ DO WHILE ( EuNormFx > err_tol )
 	i = i + 1
 END DO
 
-WRITE(*,*) " ====================================================================="
+WRITE(*,*) " ======================Newton Iteration Results========================"
 WRITE(*,30) epsilon
 30 FORMAT(" || The value of epsilon is....................." ES14.6, "        ||")
 D = epsilon * K/ 8.0
@@ -116,80 +112,131 @@ CLOSE(UNIT = 10)
 !call gnuplot through shell to plot results
 CALL SYSTEM('gnuplot -p data_plot.plt')
 
+!!!!!!!!!!!!!!!!!!!!!!!!!! SOLUTION USING BISECTION METHOD !!!!!!!!!!!!!!!!!!!!!!!!!!
+CALL bisection(tau, LHS, err_tol, epsilon_bisect)
+WRITE(*,*) " ==================== Bisection Iteration Results ====================="
+WRITE(*,54) epsilon_bisect
+54 FORMAT(" || The value of epsilon is....................." ES14.6, "        ||")
+D = epsilon_bisect * K/ 8.0
+WRITE(*,56) D
+56 FORMAT(" || The effective liquid diffusivity is........." ES14.6, " mm^2/s ||")
+WRITE(*,58) D*(1.0/1000.)**2.
+58 FORMAT(" || The effective liquid diffusivity is........." ES14.6, " m^2/s  ||")
+WRITE(*,*) " ====================================================================="
 
-! !calculate uncertainties in eff diffusivity using TSM
-! !calculate df_do
+!calculate uncertainties in eff diffusivity using TSM
+!calculate df_do
 ! CALL partialF_partial_do(d_o, dfdo, d_c, yo, y_ofc, err_tol)
 
 
 END PROGRAM asymTheoryDiffusivity
 
-! SUBROUTINE partialF_partial_do(d_o, dfdo_out, d_c, yo, y_ofc, err_tol)
-! 	IMPLICIT NONE
-! 	REAL(KIND = 8), INTENT(IN) :: d_o, d_c, yo, y_ofc, err_tol
-! 	REAL(KIND = 8), INTENT(OUT) :: dfdo_out
-! 	REAL(KIND = 8), DIMENSION(4) :: delta_do, do_1, do_2, tau_1, tau_2, df_do
-! 	REAL(KIND = 8) :: p_incr, successive_norm
-! 	INTEGER :: i, N 
 
-! 	p_incr = 0.01
-! 	N = 4
-! 	DO i=1,N 
-! 		delta_do(i) = p_incr / ( i*2.0 )
-! 		do_1(i) = d_o + delta_do(i) 
-! 		do_2(i) = d_o - delta_do(i)
-! 		tau_1(i) = LOG( do_1(i) / d_c )
-! 		tau_2(i) = LOG( do_2(i) / d_c )
 
-! 		CALL partialF_partial_x( do_1(i), do_2(i), d_c, yo, yo, delta_do(i), y_ofc, df_do(i), err_tol )
-! 	END DO 
+SUBROUTINE partialF_partial_do(d_o, dfdo_out, d_c, yo, y_ofc, err_tol)
+	IMPLICIT NONE
+	REAL(KIND = 8), INTENT(IN) :: d_o, d_c, yo, y_ofc, err_tol
+	REAL(KIND = 8), INTENT(OUT) :: dfdo_out
+	REAL(KIND = 8), DIMENSION(4) :: delta_do, do_1, do_2, tau_1, tau_2, df_do
+	REAL(KIND = 8) :: p_incr, successive_norm
+	INTEGER :: i, N 
 
-! 	DO i=2,N
-! 		successive_norm = ABS( df_do(i) - df_do(i-1) )
-! 		WRITE(*,10) successive_norm
-! 		10 FORMAT(' ','Successive Norm: ', ES14.6)
-! 	END DO
+	p_incr = 0.01
+	N = 4
+	DO i=1,N 
+		delta_do(i) = p_incr / ( i*2.0 )
+		do_1(i) = d_o + delta_do(i) 
+		do_2(i) = d_o - delta_do(i)
+		tau_1(i) = LOG( do_1(i) / d_c )
+		tau_2(i) = LOG( do_2(i) / d_c )
+
+		CALL partialF_partial_x( do_1(i), do_2(i), d_c, yo, yo, delta_do(i), y_ofc, df_do(i), err_tol )
+	END DO 
+
+	DO i=2,N
+		successive_norm = ABS( df_do(i) - df_do(i-1) )
+		WRITE(*,10) successive_norm
+		10 FORMAT(' ','Successive Norm: ', ES14.6)
+	END DO
 	
-! 	dfdo_out = df_do(N) 
-! 	WRITE(*,20) dfdo_out
-! 	20 FORMAT(' ','df_do approximately: ', ES14.6)
+	dfdo_out = df_do(N) 
+	WRITE(*,20) dfdo_out
+	20 FORMAT(' ','df_do approximately: ', ES14.6)
 
-! END SUBROUTINE partialF_partial_do
+END SUBROUTINE partialF_partial_do
 
 
-! SUBROUTINE partialF_partial_x(do_1, do_2, d_c, yo_1, yo_2, delta_x, y_ofc, df_dx, err_tol)
-! 	IMPLICIT NONE 
-! 	REAL(KIND = 8), INTENT(IN) :: do_1, do_2, d_c, yo_1, yo_2, &
-! 	delta_x, y_ofc, err_tol
-! 	REAL(KIND = 8), INTENT(OUT) :: df_dx
-! 	REAL(KIND = 8) :: tau_1, tau_2, epsilon_1, epsilon_2, &
-! 	EuNormFx_1, EuNormFx_2, LHS_1, LHS_2, ep_min, ep_max
-! 	REAL(KIND=8), DIMENSION(100) :: ig_vector
-! 	INTEGER :: N, i
+SUBROUTINE partialF_partial_x(do_1, do_2, d_c, yo_1, yo_2, delta_x, y_ofc, df_dx, err_tol)
+	IMPLICIT NONE 
+	REAL(KIND = 8), INTENT(IN) :: do_1, do_2, d_c, yo_1, yo_2, &
+	delta_x, y_ofc, err_tol
+	REAL(KIND = 8), INTENT(OUT) :: df_dx
+	! REAL(KIND = 8) :: tau_1, tau_2, epsilon_1, epsilon_2, &
+	! EuNormFx_1, EuNormFx_2, LHS_1, LHS_2, ep_min, ep_max
+	REAL(KIND = 8) :: tau_1, tau_2, epsilon_1, epsilon_2, &
+	LHS_1, LHS_2
+	REAL(KIND=8), DIMENSION(100) :: ig_vector
+	INTEGER :: N, i
 
-! 	tau_1 = LOG(do_1 / d_c)
-! 	tau_2 = LOG(do_2 / d_c)
-! 	LHS_1 = y_ofc / do_1
-! 	LHS_2 = y_ofc / do_2
+	tau_1 = LOG(do_1 / d_c)
+	tau_2 = LOG(do_2 / d_c)
+	LHS_1 = y_ofc / do_1
+	LHS_2 = y_ofc / do_2
 
-! 	ep_min = 0.001 
-! 	ep_max = 0.5
-! 	N = 100
-! 	!create array filled with intial guesses
-! 	CALL linspace(ig_vector, ep_min, ep_max, N)
+	! ep_min = 0.001 
+	! ep_max = 0.5
+	! N = 100
+	! !create array filled with intial guesses
+	! CALL linspace(ig_vector, ep_min, ep_max, N)
 
-! 	DO i=1,N 
-! 		CALL NewtonSolve(tau_1, LHS_1, ig_vector(i), epsilon_1, err_tol, EuNormFx_1)
-! 	END DO 
+	! DO i=1,N 
+	! 	CALL NewtonSolve(tau_1, LHS_1, ig_vector(i), epsilon_1, err_tol, EuNormFx_1)
+	! END DO 
 
-! 	DO i=1,N 
-! 		CALL NewtonSolve(tau_2, LHS_2, ig_vector(i), epsilon_2, err_tol, EuNormFx_2)
-! 	END DO 
+	! DO i=1,N 
+	! 	CALL NewtonSolve(tau_2, LHS_2, ig_vector(i), epsilon_2, err_tol, EuNormFx_2)
+	! END DO 
 
-! 	df_dx = (epsilon_2 - epsilon_1) / (2. * delta_x)		
+	CALL bisection(tau_1, LHS_1, err_tol, epsilon_1)
+	CALL bisection(tau_2, LHS_2, err_tol, epsilon_2)
 
-! END SUBROUTINE partialF_partial_x
+	df_dx = (epsilon_2 - epsilon_1) / (2. * delta_x)		
 
+END SUBROUTINE partialF_partial_x
+
+SUBROUTINE bisection(tau, LHS, err_tol, c)
+	IMPLICIT NONE
+	REAL(KIND=8), INTENT(IN) :: tau, LHS, err_tol
+	REAL(KIND=8), INTENT(OUT) :: c
+	REAL(KIND=8) :: a_o, b_o, f_c, f_ao, f_bo, b_previous
+	INTEGER :: maxit, i 
+
+	a_o = 0.001
+	b_o = 0.5
+	maxit = 300
+	DO i=1,maxit
+		c = 0.5*(a_o + b_o)
+		CALL Fx_eval(tau, c, LHS, f_c)  		
+		CALL Fx_eval(tau, a_o, LHS, f_ao)
+		CALL Fx_eval(tau, b_o, LHS, f_bo) 
+
+		IF ( ABS(f_c) < err_tol ) THEN
+			EXIT 
+		ELSE IF ( f_ao * f_bo < 0 ) THEN
+			b_previous = b_o 
+			b_o = c 
+		ELSE 
+			a_o = c 
+			b_o = b_previous
+		END IF  
+
+		WRITE(*,20) i, ABS(f_c)
+		20 FORMAT(' ',"iteration count:" I3, "   function residual:" ES14.6)	
+
+		IF ( ABS(f_c) < err_tol )  EXIT  
+
+	END DO 
+END SUBROUTINE bisection
 
 
 SUBROUTINE NewtonSolve(tau, LHS, eps_ig, epsilon, err_tol, EuNormFx)
