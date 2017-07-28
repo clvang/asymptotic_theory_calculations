@@ -69,7 +69,6 @@ tau = LOG(d_o / d_c)
 LHS = y_ofc / yo
 
 !!!!!!!!!!!!!!!!!!!!!!!!!! SOLUTION USING BISECTION METHOD !!!!!!!!!!!!!!!!!!!!!!!!!!
-
 CALL bisection(tau, LHS, err_tol, epsilon_bisect)
 WRITE(*,*) " ==================== Bisection Iteration Results ====================="
 WRITE(*,54) epsilon_bisect
