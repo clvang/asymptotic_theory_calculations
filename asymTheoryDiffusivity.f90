@@ -153,8 +153,8 @@ SUBROUTINE partialF_partial_x(do_1, do_2, d_c, yo_1, yo_2, delta_x, y_ofc, df_dx
 
     tau_1 = LOG(do_1 / d_c)
     tau_2 = LOG(do_2 / d_c)
-    LHS_1 = y_ofc / do_1
-    LHS_2 = y_ofc / do_2
+    LHS_1 = y_ofc / yo_1
+    LHS_2 = y_ofc / yo_2
 
     CALL bisection(tau_1, LHS_1, err_tol, epsilon_1)
     CALL bisection(tau_2, LHS_2, err_tol, epsilon_2)
@@ -238,7 +238,19 @@ SUBROUTINE Fx_eval(tau, eps, LHS, Fx)
     Fx  = 1.0 + h_0minus + eps * h_1minus + (H0minus/eps) + &
         H1minus + eps * H2minus - h_match - LHS
 
-
+    ! !Another possible form of Fx as output by Mathematica
+    ! Fx = (1./36.)*( &
+    !     2.0 * ( -6.0 + 12.0*eps + 44.0*eps**2 - 9.0*tau )/eps &
+    !     - & 
+    !     18.0*EXP(-tau/(4.0*eps)) * ( 4.0*SQRT(PI)*eps + (-2.0 + 4.0*eps - 3.0*tau)*SQRT(tau/eps) ) / SQRT(PI) & 
+    !     - &
+    !     4.0*EXP(3.0*tau) * ( -3.0 - 3.0*eps + 2.0*eps**2 * (-7.0 + 12.0*tau) ) / eps  &
+    !     + &
+    !     18.0*(2*eps + tau)*ERF( SQRT(tau/eps) / 2.0 ) / eps &
+    !     - & 
+    !     9.0 * ( 8.0*eps**2 + 2.0*eps*tau + 3.0*tau**2 )*ERFC( SQRT(tau/eps) / 2.0 ) / eps &
+    !     - LHS 
+    !     )
 END SUBROUTINE Fx_eval
 
 
