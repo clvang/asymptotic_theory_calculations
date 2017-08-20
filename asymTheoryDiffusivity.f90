@@ -204,9 +204,6 @@ SUBROUTINE Fx_eval(tau, eps, LHS, Fx)
     REAL(KIND=8), PARAMETER :: PI = 3.1415927
     REAL(KIND=8), INTENT(IN) :: tau, eps, LHS
     REAL(KIND=8), INTENT(OUT) :: Fx
-    REAL(KIND=8) :: H0minus, H1minus, H2minus, h_0minus, h_1minusIntegral, &
-        h_1minus, h_match, Dfx
-
 
     IF (tau < 0 .OR. eps < 0) THEN 
         WRITE(*,10) tau 
@@ -216,41 +213,14 @@ SUBROUTINE Fx_eval(tau, eps, LHS, Fx)
         WRITE(*,*) '!!!!!!!! CANNOT EVALUATE SQUARE ROOTS OF VALUES <0 !!!!!!!!!!!!!!'	
     END IF 
 
-    !define parts of asymptotic equation that do not depend on epsilon
-    H0minus = ( EXP(3.*tau) - 1. ) / 3.
-    H1minus = ( EXP(3.*tau) + 2. ) / 3.
-    H2minus = (22. / 9.) +  ( 14.-24.*tau )*EXP(3*tau) / 9.
-
-    !define parts of asymptotic equation that depend on epsilon
-    h_0minus = ((tau/eps)/2.) * ( 1. + ERF( SQRT(tau/eps)/2. ) ) &
-        + ERF( SQRT(tau/eps)/2. ) &
-        + SQRT( (tau/eps)/PI ) * EXP( -(tau/eps) / 4. )
-    !NOTE: h_1minusIntegral is the alernate form of the integral in
-    !      the variable h_1minus, as given by Mathematica
-    h_1minusIntegral = (1./2.) * SQRT(PI) * SQRT(tau/eps) * ( -4. + (3.*tau/eps) ) &
-        - (1./4.)*EXP( (tau/eps) / 4. ) * PI & 
-        * ( 8. + ( tau*(2.*eps + 3.*tau) ) / eps**2. ) &
-        * ERFC( (tau/eps) / 2. )
-    h_1minus = 4. + (tau/eps) + ( 3.*(tau/eps)**2. / 2. ) &
-        - 2. * EXP( -(tau/eps) / 4.  ) &
-        + ( EXP( -(tau/eps) / 4. )/ PI ) * h_1minusIntegral
-    h_match = 1.0 + (tau/eps) + eps * ( 4. + (tau/eps) + (3./2.)*(tau**2. / eps**2.) )
-    Fx  = 1.0 + h_0minus + eps * h_1minus + (H0minus/eps) + &
-        H1minus + eps * H2minus - h_match - LHS
-
-    ! !Another possible form of Fx as output by Mathematica
-    ! Fx = (1./36.)*( &
-    !     2.0 * ( -6.0 + 12.0*eps + 44.0*eps**2 - 9.0*tau )/eps &
-    !     - & 
-    !     18.0*EXP(-tau/(4.0*eps)) * ( 4.0*SQRT(PI)*eps + (-2.0 + 4.0*eps - 3.0*tau)*SQRT(tau/eps) ) / SQRT(PI) & 
-    !     - &
-    !     4.0*EXP(3.0*tau) * ( -3.0 - 3.0*eps + 2.0*eps**2 * (-7.0 + 12.0*tau) ) / eps  &
-    !     + &
-    !     18.0*(2*eps + tau)*ERF( SQRT(tau/eps) / 2.0 ) / eps &
-    !     - & 
-    !     9.0 * ( 8.0*eps**2 + 2.0*eps*tau + 3.0*tau**2 )*ERFC( SQRT(tau/eps) / 2.0 ) / eps &
-    !     - LHS 
-    !     )
+    ! A possible form of the asymptotic theory equation
+    ! as output by Mathematica (See liquid_diff.Rev03)
+    Fx = (1.0/36.0)*( 2.0 * ( -6.0 + 12.0*eps + 44.0*eps**2 - 9.0*tau )/eps &
+        - 18.0*EXP(-tau/(4.0*eps)) * ( 4.0*SQRT(PI)*eps + (-2.0 + 4.0*eps - 3.0*tau)*SQRT(tau/eps) ) / SQRT(PI) & 
+        - 4.0*EXP(3.0*tau) * ( -3.0 - 3.0*eps + 2.0*eps**2 * (-7.0 + 12.0*tau) ) / eps  &
+        + 18.0*( 2*eps + tau )*ERF( SQRT(tau/eps) / 2.0 ) / eps &
+        - 9.0 * ( 8.0*eps**2 + 2.0*eps*tau + 3.0*tau**2 )*ERFC( SQRT(tau/eps) / 2.0 ) / eps - 36.0*LHS )
+    
 END SUBROUTINE Fx_eval
 
 
