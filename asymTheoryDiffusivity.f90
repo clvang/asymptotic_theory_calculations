@@ -3,7 +3,7 @@ PROGRAM asymTheoryDiffusivity
     !  Purpose:
     !    This program calculates the diffusivities by solving
     !	 the asymptotic theory equation from Aharon and Shaw
-    ! 	 using Newton's method with damping.
+    ! 	 using the Bisection Method.
     !  Record of revisions:
     !      Date       Programmer          Description of change
     !      ====       ==========          =====================
@@ -14,7 +14,6 @@ PROGRAM asymTheoryDiffusivity
     REAL(KIND=8) :: dc_sq, K, do_measured, p, yo, d_c, y_ofc, percent_increase, &
         d_o, tau, LHS, D, err_tol, ep_min, ep_max, dfdo, epsilon_bisect
     REAL(KIND=8), DIMENSION(6) :: fc_props
-    REAL(KIND=8), DIMENSION(50) :: ig_vector
     REAL(KIND=8), DIMENSION(700) :: fvalues, ep_vals
     CHARACTER(len=11) :: filename
     CHARACTER(len=100) :: junk
@@ -57,7 +56,7 @@ PROGRAM asymTheoryDiffusivity
     ENDIF openif
 
     d_c    = SQRT(dc_sq)   !drop diameter at onset of flame contraction [mm]
-    y_ofc = 1. 			   !mass fraction of low volatility comp at onset of fc
+    y_ofc = 1.0 			   !mass fraction of low volatility comp at onset of fc
 
     IF (p == 1) THEN
         percent_increase = 0.055
@@ -81,8 +80,8 @@ PROGRAM asymTheoryDiffusivity
     WRITE(*,*) " ====================================================================="
 
     !plot function around epsilon as a visual check for multiple solutions nearby
-    ep_min = (epsilon_bisect )/ 4.  !(1.826E-01)/4.0 !
-    ep_max = epsilon_bisect*100     !(1.826E-01)*100.0 !
+    ep_min = (epsilon_bisect )/ 4.0  
+    ep_max = epsilon_bisect*100     
     N      = 700
     CALL linspace(ep_vals, ep_min, ep_max, N)
     OPEN(UNIT=10,FILE='asymTheoryData')
@@ -98,32 +97,30 @@ PROGRAM asymTheoryDiffusivity
     !calculate df_do
     CALL partialF_partial_do(d_o, dfdo, d_c, yo, y_ofc, err_tol)
 
-
 END PROGRAM asymTheoryDiffusivity
 
 SUBROUTINE partialF_partial_do(d_o, dfdo_out, d_c, yo, y_ofc, err_tol)
     IMPLICIT NONE
     REAL(KIND = 8), INTENT(IN) :: d_o, d_c, yo, y_ofc, err_tol
     REAL(KIND = 8), INTENT(OUT) :: dfdo_out
-    REAL(KIND = 8), DIMENSION(4) :: delta_do, do_1, do_2, tau_1, tau_2, df_do
+    REAL(KIND = 8), DIMENSION(8) :: delta_do, do_1, do_2, df_do !tau_1, tau_2, 
     REAL(KIND = 8) :: p_incr, successive_norm
     INTEGER :: i, N 
 
-    WRITE(*,*) '********************* CALCULATING DF_DO *****************'
+    WRITE(*,*) '************** BEGIN CALCULATING DF_DO ***************'
 
     p_incr = 0.01
-    N = 4
+    N = 8
     ! TODO: add restrction on do_1 and do_2 s.t. do/d_c > 0 iff tau > 0
     ! do_max = d_c 
     ! do_min = d_o / 4.0
     ! delta_do = (do_max - do_min)
 
+    delta_do(1) = 0.01*d_o 
     DO i=1,N 
-        delta_do(i) = p_incr / ( i*2.0 )
+        delta_do(i+1) = p_incr / ( (i+1)*2.0 )
         do_1(i) = d_o + delta_do(i) 
         do_2(i) = d_o - delta_do(i)
-        tau_1(i) = LOG( do_1(i) / d_c )
-        tau_2(i) = LOG( do_2(i) / d_c )
 
         CALL partialF_partial_x( do_1(i), do_2(i), d_c, yo, yo, delta_do(i), y_ofc, df_do(i), err_tol )
     END DO 
@@ -134,9 +131,11 @@ SUBROUTINE partialF_partial_do(d_o, dfdo_out, d_c, yo, y_ofc, err_tol)
 10      FORMAT(' ','Successive Norm: ', ES14.6)
     END DO
 	
-    dfdo_out = df_do(N) 
+    dfdo_out = df_do(N-1) 
     WRITE(*,20) dfdo_out
 20  FORMAT(' ','df_do approximately: ', ES14.6)
+
+    WRITE(*,*) '************** END CALCULATING DF_DO ***************'
 
 END SUBROUTINE partialF_partial_do
 
@@ -148,18 +147,24 @@ SUBROUTINE partialF_partial_x(do_1, do_2, d_c, yo_1, yo_2, delta_x, y_ofc, df_dx
     REAL(KIND = 8), INTENT(OUT) :: df_dx
     REAL(KIND = 8) :: tau_1, tau_2, epsilon_1, epsilon_2, &
         LHS_1, LHS_2
-    REAL(KIND=8), DIMENSION(100) :: ig_vector
     INTEGER :: N, i
 
-    tau_1 = LOG(do_1 / d_c)
-    tau_2 = LOG(do_2 / d_c)
+    tau_1 = LOG(do_1 / d_c)  
+    tau_2 = LOG(do_2 / d_c)  
     LHS_1 = y_ofc / yo_1
     LHS_2 = y_ofc / yo_2
 
+
+    WRITE(*,10) tau_1, LHS_1
+10  FORMAT('(upper bound values) tau_1 =',ES14.6, ',  LHS_1 =', ES14.6)   
     CALL bisection(tau_1, LHS_1, err_tol, epsilon_1)
+
+    WRITE(*,20) tau_2, LHS_2
+20  FORMAT('(lower bound values) tau_2 =',ES14.6, ',  LHS_2 =', ES14.6)
     CALL bisection(tau_2, LHS_2, err_tol, epsilon_2)
 
-    df_dx = (epsilon_2 - epsilon_1) / (2. * delta_x)		
+    !central difference formula to calculate derivative
+    df_dx = (epsilon_1 - epsilon_2) / (2.0 * delta_x)		
 
 END SUBROUTINE partialF_partial_x
 
@@ -220,7 +225,7 @@ SUBROUTINE Fx_eval(tau, eps, LHS, Fx)
         - 4.0*EXP(3.0*tau) * ( -3.0 - 3.0*eps + 2.0*eps**2 * (-7.0 + 12.0*tau) ) / eps  &
         + 18.0*( 2*eps + tau )*ERF( SQRT(tau/eps) / 2.0 ) / eps &
         - 9.0 * ( 8.0*eps**2 + 2.0*eps*tau + 3.0*tau**2 )*ERFC( SQRT(tau/eps) / 2.0 ) / eps - 36.0*LHS )
-    
+
 END SUBROUTINE Fx_eval
 
 
