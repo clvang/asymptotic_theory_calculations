@@ -12,8 +12,9 @@ PROGRAM asymTheoryDiffusivity
     IMPLICIT NONE
 
     REAL(KIND=8) :: dc_sq, K, do_measured, p, yo, d_c, y_ofc, percent_increase, &
-        d_o, tau, LHS, D, err_tol, ep_min, ep_max, dfdo, epsilon_bisect, dfdc, dfdY
-    REAL(KIND=8), DIMENSION(6) :: fc_props
+        d_o, tau, LHS, D, err_tol, ep_min, ep_max, dfdo, epsilon_bisect, dfdc, &
+        dfdY, Uk_sq, Udo_sq, Udc_sq, UYo_sq, Ueps, Udiff
+    REAL(KIND=8), DIMENSION(10) :: fc_props
     REAL(KIND=8), DIMENSION(700) :: fvalues, ep_vals
     CHARACTER(len=11) :: filename
     CHARACTER(len=100) :: junk
@@ -39,7 +40,7 @@ PROGRAM asymTheoryDiffusivity
             READ(1,*,IOSTAT=status) junk
         END DO readjunkLines
 
-        readData: DO i=1,6 					!read lines 5-9
+        readData: DO i=1,10 					!read lines 5-9
             READ(1,*,IOSTAT=status) fc_props(i)
         END DO readData
 
@@ -49,7 +50,10 @@ PROGRAM asymTheoryDiffusivity
         do_measured = fc_props(4)  !initial drop diameter measured [mm]
         yo 			= fc_props(5)  !initial mass frac of low volitiliy component
         err_tol 	= fc_props(6)  !error tolerrance for newton's method
-
+        Uk_sq       = fc_props(7)**2
+        Udo_sq      = fc_props(8)**2
+        Udc_sq      = fc_props(9)**2
+        UYo_sq      = (fc_props(10)*yo)**2
         CLOSE(UNIT=1)
     ELSE
         WRITE(*,*) 'Open of file NOT sucessful!'
@@ -90,7 +94,7 @@ PROGRAM asymTheoryDiffusivity
     !calculate df_do
     CALL partialF_partial_do(d_o, dfdo, d_c, yo, y_ofc, err_tol)
     CALL partialF_partial_dc(d_o, dfdc, d_c, yo, y_ofc, err_tol)  
-    CALL partialF_partial_dY(d_o, dfdY, d_c, yo, y_ofc, err_tol)     
+    CALL partialF_partial_dY(d_o, dfdY, d_c, yo, y_ofc, err_tol)  
 
     WRITE(*,*) " ==================== Bisection Iteration Results ====================="
     WRITE(*,54) epsilon_bisect
@@ -102,6 +106,8 @@ PROGRAM asymTheoryDiffusivity
 58  FORMAT(" || The effective liquid diffusivity is........." ES14.6, " m^2/s  ||")
     WRITE(*,*) " ====================================================================="  
 
+    CALL uncertainty_diffusivity(dfdo, Udo_sq, dfdc, Udc_sq, dfdY, UYo_sq, D, Uk_sq, K, epsilon_bisect, Ueps, Udiff)
+
     WRITE(*,*) " ------------------------ Equation Sensitivies ------------------------"
     WRITE(*,60) dfdo
 60  FORMAT(" || Sensitivity in d_o (df_do) is:.............." ES14.6, "        ||")
@@ -109,9 +115,24 @@ PROGRAM asymTheoryDiffusivity
 70  FORMAT(" || Sensitivity in d_c (df_dc) is:.............." ES14.6, "        ||")
     WRITE(*,80) dfdY
 80  FORMAT(" || Sensitivity in y_o (df_yo) is:.............." ES14.6, "        ||")
+    WRITE(*,90) Ueps
+90  FORMAT(" || Uncertainty in epsilon (U_eps) is:.........." ES14.6, "        ||")
+    WRITE(*,100) Udiff
+100 FORMAT(" || Uncertainty in D (U_diff) is:..............." ES14.6, "        ||")
     WRITE(*,*) " ----------------------------------------------------------------------"      
 
 END PROGRAM asymTheoryDiffusivity
+
+SUBROUTINE uncertainty_diffusivity(dfdo, Udo_sq, dfdc, Udc_sq, dfdY, UYo_sq, D, Uk_sq, K, epsilon, Ueps, Udiff)
+    IMPLICIT NONE 
+    REAL(KIND=8), INTENT(IN) :: dfdo, Udo_sq, dfdc, Udc_sq, dfdY, UYo_sq, D, Uk_sq, K, epsilon 
+    REAL(KIND=8), INTENT(OUT) :: Ueps, Udiff 
+
+    Ueps = SQRT( (dfdo**2)*(Udo_sq) + (dfdc**2)*(Udc_sq) + (dfdY**2)*(UYo_sq) )
+
+    Udiff = SQRT( ( Uk_sq/(K*K) ) + ( Ueps*Ueps/(epsilon*epsilon) ) ) * D
+END SUBROUTINE uncertainty_diffusivity 
+
 
 SUBROUTINE partialF_partial_do(d_o, dfdo_out, d_c, yo, y_ofc, err_tol)
     IMPLICIT NONE
@@ -319,7 +340,6 @@ SUBROUTINE Fx_eval(tau, eps, LHS, Fx)
     	+ (H0minus/eps) + H1minus + eps*H2minus - h_match - LHS
 
 END SUBROUTINE Fx_eval
-
 
 SUBROUTINE linspace(varArray, lowLimit, upLimit, numPts) 
     IMPLICIT NONE

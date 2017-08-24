@@ -8,3 +8,7 @@
 3.731	 		!do_measured = initial droplet diameter measured [mm]
 0.20 		     !yo=initial low volatility mass fraction
 1.0D-12			 !err_tol = error tolerance for norms
+0.037223011 	!Uncertainty in K (mm^2/s)
+0.1				!Uncertainty in d_o (mm)
+0.1				!Uncertainty in d_c (mm)
+0.02			!uncertainty in Yo percentage
