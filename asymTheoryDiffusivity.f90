@@ -12,7 +12,7 @@ PROGRAM asymTheoryDiffusivity
     IMPLICIT NONE
 
     REAL(KIND=8) :: dc_sq, K, do_measured, p, yo, d_c, y_ofc, percent_increase, &
-        d_o, tau, LHS, D, err_tol, ep_min, ep_max, dfdo, epsilon_bisect
+        d_o, tau, LHS, D, err_tol, ep_min, ep_max, dfdo, epsilon_bisect, dfdc, dfdY
     REAL(KIND=8), DIMENSION(6) :: fc_props
     REAL(KIND=8), DIMENSION(700) :: fvalues, ep_vals
     CHARACTER(len=11) :: filename
@@ -68,16 +68,9 @@ PROGRAM asymTheoryDiffusivity
     LHS = y_ofc / yo
 
     !!!!!!!!!!!!!!!!!!!!!!!!!! SOLUTION USING BISECTION METHOD !!!!!!!!!!!!!!!!!!!!!!!!!!
+    WRITE(*,*) '************** BEGIN CALCULATING EPSILON ***************'    
     CALL bisection(tau, LHS, err_tol, epsilon_bisect)
-    WRITE(*,*) " ==================== Bisection Iteration Results ====================="
-    WRITE(*,54) epsilon_bisect
-54  FORMAT(" || The value of epsilon is....................." ES14.6, "        ||")
-    D = epsilon_bisect * K/ 8.0
-    WRITE(*,56) D
-56  FORMAT(" || The effective liquid diffusivity is........." ES14.6, " mm^2/s ||")
-    WRITE(*,58) D*(1.0/1000.)**2.
-58  FORMAT(" || The effective liquid diffusivity is........." ES14.6, " m^2/s  ||")
-    WRITE(*,*) " ====================================================================="
+    WRITE(*,*) '************** END CALCULATING EPSILON ***************'       
 
     !plot function around epsilon as a visual check for multiple solutions nearby
     ep_min = (epsilon_bisect )/ 4.0  
@@ -96,72 +89,154 @@ PROGRAM asymTheoryDiffusivity
     !!!!!!!!!!!!!!!!!!!! CALCULATE UNCERTAINTIES IN D USING TSM !!!!!!!!!!!!!!!!!!!!!!
     !calculate df_do
     CALL partialF_partial_do(d_o, dfdo, d_c, yo, y_ofc, err_tol)
+    CALL partialF_partial_dc(d_o, dfdc, d_c, yo, y_ofc, err_tol)  
+    CALL partialF_partial_dY(d_o, dfdY, d_c, yo, y_ofc, err_tol)     
+
+    WRITE(*,*) " ==================== Bisection Iteration Results ====================="
+    WRITE(*,54) epsilon_bisect
+54  FORMAT(" || The value of epsilon is....................." ES14.6, "        ||")
+    D = epsilon_bisect * K/ 8.0
+    WRITE(*,56) D
+56  FORMAT(" || The effective liquid diffusivity is........." ES14.6, " mm^2/s ||")
+    WRITE(*,58) D*(1.0/1000.)**2.
+58  FORMAT(" || The effective liquid diffusivity is........." ES14.6, " m^2/s  ||")
+    WRITE(*,*) " ====================================================================="  
+
+    WRITE(*,*) " ------------------------ Equation Sensitivies ------------------------"
+    WRITE(*,60) dfdo
+60  FORMAT(" || Sensitivity in d_o (df_do) is:.............." ES14.6, "        ||")
+    WRITE(*,70) dfdc
+70  FORMAT(" || Sensitivity in d_c (df_dc) is:.............." ES14.6, "        ||")
+    WRITE(*,80) dfdY
+80  FORMAT(" || Sensitivity in y_o (df_yo) is:.............." ES14.6, "        ||")
+    WRITE(*,*) " ----------------------------------------------------------------------"      
 
 END PROGRAM asymTheoryDiffusivity
 
 SUBROUTINE partialF_partial_do(d_o, dfdo_out, d_c, yo, y_ofc, err_tol)
     IMPLICIT NONE
-    REAL(KIND = 8), INTENT(IN) :: d_o, d_c, yo, y_ofc, err_tol
-    REAL(KIND = 8), INTENT(OUT) :: dfdo_out
-    REAL(KIND = 8), DIMENSION(8) :: delta_do, do_1, do_2, df_do !tau_1, tau_2, 
-    REAL(KIND = 8) :: p_incr, successive_norm
+    REAL(KIND=8), INTENT(IN) :: d_o, d_c, yo, y_ofc, err_tol
+    REAL(KIND=8), INTENT(OUT) :: dfdo_out
+    REAL(KIND=8), DIMENSION(8) :: delta_do, do_1, do_2, df_do !tau_1, tau_2, 
+    REAL(KIND=8) :: successive_norm
     INTEGER :: i, N 
 
     WRITE(*,*) '************** BEGIN CALCULATING DF_DO ***************'
 
-    p_incr = 0.01
     N = 8
     ! TODO: add restrction on do_1 and do_2 s.t. do/d_c > 0 iff tau > 0
     ! do_max = d_c 
     ! do_min = d_o / 4.0
-    ! delta_do = (do_max - do_min)
 
-    delta_do(1) = 0.01*d_o 
+    delta_do(1) = 0.01*d_o
     DO i=1,N 
-        delta_do(i+1) = p_incr / ( (i+1)*2.0 )
+        delta_do(i+1) = 0.01*d_o / ( (i+1)*2.0 )
         do_1(i) = d_o + delta_do(i) 
         do_2(i) = d_o - delta_do(i)
 
-        CALL partialF_partial_x( do_1(i), do_2(i), d_c, yo, yo, delta_do(i), y_ofc, df_do(i), err_tol )
+        CALL partialF_partial_x( do_1(i), do_2(i), d_c, d_c, yo, yo, delta_do(i), y_ofc, df_do(i), err_tol )
     END DO 
 
     DO i=2,N
         successive_norm = ABS( df_do(i) - df_do(i-1) )
         WRITE(*,10) successive_norm
-10      FORMAT(' ','Successive Norm: ', ES14.6)
+10      FORMAT(' ','Successive Norm between df_do Values: ', ES14.6)
     END DO
-	
-    dfdo_out = df_do(N-1) 
-    WRITE(*,20) dfdo_out
-20  FORMAT(' ','df_do approximately: ', ES14.6)
-
+    dfdo_out = df_do(N) 
     WRITE(*,*) '************** END CALCULATING DF_DO ***************'
 
 END SUBROUTINE partialF_partial_do
 
+SUBROUTINE partialF_partial_dc(d_o, dfdc_out, d_c, yo, y_ofc, err_tol)
+    IMPLICIT NONE
+    REAL(KIND=8), INTENT(IN) :: d_o, d_c, yo, y_ofc, err_tol
+    REAL(KIND=8), INTENT(OUT) :: dfdc_out
+    REAL(KIND=8), DIMENSION(8) :: delta_dc, dc_1, dc_2, df_dc !tau_1, tau_2, 
+    REAL(KIND=8) :: successive_norm
+    INTEGER :: i, N 
 
-SUBROUTINE partialF_partial_x(do_1, do_2, d_c, yo_1, yo_2, delta_x, y_ofc, df_dx, err_tol)
+    WRITE(*,*) '************** BEGIN CALCULATING DF_DC ***************'
+    N = 8
+
+    delta_dc(1) = 0.01*d_c
+    DO i=1,N 
+        delta_dc(i+1) = 0.01*d_c / ( (i+1)*2.0 )
+        dc_1(i) = d_c + delta_dc(i) 
+        dc_2(i) = d_c - delta_dc(i)
+
+        CALL partialF_partial_x( d_o, d_o, dc_1(i), dc_2(i), yo, yo, delta_dc(i), y_ofc, df_dc(i), err_tol )
+    END DO 
+
+    DO i=2,N
+        successive_norm = ABS( df_dc(i) - df_dc(i-1) )
+        WRITE(*,10) successive_norm
+10      FORMAT(' ','Successive Norm between df_dc Values: ', ES14.6)
+    END DO
+	
+    dfdc_out = df_dc(N) 
+
+    WRITE(*,*) '************** END CALCULATING DF_DC ***************'
+
+END SUBROUTINE partialF_partial_dc
+
+
+SUBROUTINE partialF_partial_dY(d_o, dfdY_out, d_c, yo, y_ofc, err_tol)
+    IMPLICIT NONE
+    REAL(KIND=8), INTENT(IN) :: d_o, d_c, yo, y_ofc, err_tol
+    REAL(KIND=8), INTENT(OUT) :: dfdY_out
+    REAL(KIND=8), DIMENSION(8) :: delta_dY, Y_1, Y_2, df_dY !tau_1, tau_2, 
+    REAL(KIND=8) :: successive_norm
+    INTEGER :: i, N 
+
+    WRITE(*,*) '************** BEGIN CALCULATING DF_DY ***************'
+    N = 8
+
+    delta_dY(1) = 0.01*yo 
+    DO i=1,N 
+        delta_dY(i+1) = 0.01*yo / ( (i+1)*2.0 )
+        Y_1(i) = yo + delta_dY(i) 
+        Y_2(i) = yo - delta_dY(i)
+
+        CALL partialF_partial_x( d_o, d_o, d_c, d_c, Y_1(i), Y_2(i), delta_dY(i), y_ofc, df_dY(i), err_tol )
+    END DO 
+
+    DO i=2,N
+        successive_norm = ABS( df_dY(i) - df_dY(i-1) )
+        WRITE(*,10) successive_norm
+10      FORMAT(' ','Successive Norms between df_dY Values: ', ES14.6)
+    END DO
+	
+    dfdY_out = df_dY(N) 
+
+    WRITE(*,*) '************** END CALCULATING DF_DY ***************'
+
+END SUBROUTINE partialF_partial_dY
+
+
+SUBROUTINE partialF_partial_x(do_1, do_2, dc_1, dc_2, yo_1, yo_2, delta_x, y_ofc, df_dx, err_tol)
     IMPLICIT NONE 
-    REAL(KIND = 8), INTENT(IN) :: do_1, do_2, d_c, yo_1, yo_2, &
+    REAL(KIND=8), INTENT(IN) :: do_1, do_2, dc_1, dc_2, yo_1, yo_2, &
         delta_x, y_ofc, err_tol
-    REAL(KIND = 8), INTENT(OUT) :: df_dx
-    REAL(KIND = 8) :: tau_1, tau_2, epsilon_1, epsilon_2, &
+    REAL(KIND=8), INTENT(OUT) :: df_dx
+    REAL(KIND=8) :: tau_1, tau_2, epsilon_1, epsilon_2, &
         LHS_1, LHS_2
     INTEGER :: N, i
 
-    tau_1 = LOG(do_1 / d_c)  
-    tau_2 = LOG(do_2 / d_c)  
+    tau_1 = LOG(do_1 / dc_1)  
+    tau_2 = LOG(do_2 / dc_2)  
     LHS_1 = y_ofc / yo_1
     LHS_2 = y_ofc / yo_2
 
-
     WRITE(*,10) tau_1, LHS_1
 10  FORMAT('(upper bound values) tau_1 =',ES14.6, ',  LHS_1 =', ES14.6)   
-    CALL bisection(tau_1, LHS_1, err_tol, epsilon_1)
-
     WRITE(*,20) tau_2, LHS_2
 20  FORMAT('(lower bound values) tau_2 =',ES14.6, ',  LHS_2 =', ES14.6)
+
+    CALL bisection(tau_1, LHS_1, err_tol, epsilon_1)
     CALL bisection(tau_2, LHS_2, err_tol, epsilon_2)
+
+    WRITE(*,30) epsilon_1, epsilon_2, delta_x
+30	FORMAT('eps_1:', ES14.6, '  eps_2:', ES14.6, '  delta_dx:', ES14.6)
 
     !central difference formula to calculate derivative
     df_dx = (epsilon_1 - epsilon_2) / (2.0 * delta_x)		
@@ -203,12 +278,14 @@ SUBROUTINE bisection(tau, LHS, err_tol, p)
     END IF 
 END SUBROUTINE bisection
 
-
 SUBROUTINE Fx_eval(tau, eps, LHS, Fx)
     IMPLICIT NONE
-    REAL(KIND=8), PARAMETER :: PI = 3.1415927
+    REAL(KIND=8), PARAMETER :: PI = ATAN(1.0)*4.0 
     REAL(KIND=8), INTENT(IN) :: tau, eps, LHS
     REAL(KIND=8), INTENT(OUT) :: Fx
+    REAL(KIND=8) :: H0minus, H1minus, H2minus, h_0minus, h_1minusIntegral, &
+        h_1minus, h_match, Dfx, phi
+
 
     IF (tau < 0 .OR. eps < 0) THEN 
         WRITE(*,10) tau 
@@ -218,13 +295,28 @@ SUBROUTINE Fx_eval(tau, eps, LHS, Fx)
         WRITE(*,*) '!!!!!!!! CANNOT EVALUATE SQUARE ROOTS OF VALUES <0 !!!!!!!!!!!!!!'	
     END IF 
 
-    ! A possible form of the asymptotic theory equation
-    ! as output by Mathematica (See liquid_diff.Rev03)
-    Fx = (1.0/36.0)*( 2.0 * ( -6.0 + 12.0*eps + 44.0*eps**2 - 9.0*tau )/eps &
-        - 18.0*EXP(-tau/(4.0*eps)) * ( 4.0*SQRT(PI)*eps + (-2.0 + 4.0*eps - 3.0*tau)*SQRT(tau/eps) ) / SQRT(PI) & 
-        - 4.0*EXP(3.0*tau) * ( -3.0 - 3.0*eps + 2.0*eps**2 * (-7.0 + 12.0*tau) ) / eps  &
-        + 18.0*( 2*eps + tau )*ERF( SQRT(tau/eps) / 2.0 ) / eps &
-        - 9.0 * ( 8.0*eps**2 + 2.0*eps*tau + 3.0*tau**2 )*ERFC( SQRT(tau/eps) / 2.0 ) / eps - 36.0*LHS )
+    phi = tau/eps
+    !define parts of asymptotic equation that do not depend on epsilon
+    H0minus = ( EXP(3.*tau) - 1. ) / 3.
+    H1minus = ( EXP(3.*tau) + 2. ) / 3.
+    H2minus = (22. / 9.) +  ( 14.-24.*tau )*EXP(3*tau) / 9.
+
+    !define parts of asymptotic equation that depend on epsilon
+    h_0minus = (phi/2.) * ( 1. + ERF( SQRT(phi)/2. ) ) &
+        + ERF( SQRT(phi)/2. ) &
+        + SQRT( phi/PI ) * EXP( -phi / 4. )
+    !NOTE: h_1minusIntegral is the alernate form of the integral in
+    !      the variable h_1minus, as given by Mathematica
+    h_1minusIntegral = ( EXP(-phi/4.0) * SQRT(phi) * (3.0*phi - 4.0) )/ ( 2.0*SQRT(PI) ) &
+    	- ( 1.0/4.0 ) * ( 8.0 + phi*(2.0 + 3.0*phi) ) * ERFC( SQRT(phi)/2.0 )
+
+    h_1minus = 4. + phi + ( 3.*(phi**2.) / 2. ) &
+        - 2. * EXP( -phi / 4.  ) 
+
+    h_match = 1.0 + phi + eps * ( 4. + phi + (3./2.)*(phi**2) )
+
+    Fx  = 1.0 + h_0minus + eps*h_1minus + eps*h_1minusIntegral &
+    	+ (H0minus/eps) + H1minus + eps*H2minus - h_match - LHS
 
 END SUBROUTINE Fx_eval
 
