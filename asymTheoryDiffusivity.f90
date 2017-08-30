@@ -13,7 +13,7 @@ PROGRAM asymTheoryDiffusivity
 
     REAL(KIND=8) :: dc_sq, K, do_measured, p, yo, d_c, y_ofc, percent_increase, &
         d_o, tau, LHS, D, err_tol, ep_min, ep_max, dfdo, epsilon_bisect, dfdc, &
-        dfdY, Uk_sq, Udo_sq, Udc_sq, UYo_sq, Ueps, Udiff
+        dfdY, Uk_sq, Udo_sq, Udc_sq, UYo_sq, Ueps, Udiff, Udiff_95
     REAL(KIND=8), DIMENSION(10) :: fc_props
     REAL(KIND=8), DIMENSION(700) :: fvalues, ep_vals
     CHARACTER(len=11) :: filename
@@ -44,26 +44,26 @@ PROGRAM asymTheoryDiffusivity
             READ(1,*,IOSTAT=status) fc_props(i)
         END DO readData
 
-        p 			= fc_props(1)  !chamber pressure [atm]
-        dc_sq 		= fc_props(2)  !drop diameter @ onset of fc squared [mm^2]
-        K 			= fc_props(3)  !burning rate constant prior to onset of fc
-        do_measured = fc_props(4)  !initial drop diameter measured [mm]
-        yo 			= fc_props(5)  !initial mass frac of low volitiliy component
-        err_tol 	= fc_props(6)  !error tolerrance for newton's method
-        Uk_sq       = fc_props(7)**2
-        Udo_sq      = fc_props(8)**2
-        Udc_sq      = fc_props(9)**2
-        UYo_sq      = (fc_props(10)*yo)**2
+        p 			= fc_props(1)    ! chamber pressure [atm]
+        dc_sq 		= fc_props(2)    ! drop diameter @ onset of fc squared [mm^2]
+        K 			= fc_props(3)    ! burning rate constant prior to onset of fc [mm^2/s]
+        do_measured = fc_props(4)    ! initial drop diameter measured [mm]
+        yo 			= fc_props(5)    ! initial mass frac of low volitiliy component
+        err_tol 	= fc_props(6)    ! error tolerrance for bisection method
+        Uk_sq       = fc_props(7)**2 ! uncertainty in K squared (U_k ^2) [mm^2/s]^2
+        Udo_sq      = fc_props(8)**2 ! uncertainty in do squared (U_do^2) [mm^2]
+        Udc_sq      = fc_props(9)**2 ! uncertainty in dc squared (U_dc^2) [mm^2]
+        UYo_sq      = (fc_props(10)*yo)**2 !uncertainty in Yo squared
         CLOSE(UNIT=1)
     ELSE
         WRITE(*,*) 'Open of file NOT sucessful!'
     ENDIF openif
 
-    d_c    = SQRT(dc_sq)   !drop diameter at onset of flame contraction [mm]
-    y_ofc = 1.0 			   !mass fraction of low volatility comp at onset of fc
+    d_c    = SQRT(dc_sq)   ! drop diameter at onset of flame contraction [mm]
+    y_ofc = 1.0 		   ! mass fraction of low volatility comp at onset of fc
 
     IF (p == 1) THEN
-        percent_increase = 0.055
+        percent_increase = 0.055  !so far these numbers are only valid for hep-hex exp's
     ELSE
         percent_increase = 0.086
     ENDIF
@@ -106,7 +106,8 @@ PROGRAM asymTheoryDiffusivity
 58  FORMAT(" || The effective liquid diffusivity is........." ES14.6, " m^2/s  ||")
     WRITE(*,*) " ====================================================================="  
 
-    CALL uncertainty_diffusivity(dfdo, Udo_sq, dfdc, Udc_sq, dfdY, UYo_sq, D, Uk_sq, K, epsilon_bisect, Ueps, Udiff)
+    CALL uncertainty_diffusivity(dfdo, Udo_sq, dfdc, Udc_sq, dfdY, UYo_sq, D, Uk_sq, &
+                                K, epsilon_bisect, Ueps, Udiff, Udiff_95)
 
     WRITE(*,*) " ------------------------ Equation Sensitivies ------------------------"
     WRITE(*,60) dfdo
@@ -118,7 +119,9 @@ PROGRAM asymTheoryDiffusivity
     WRITE(*,90) Ueps
 90  FORMAT(" || Uncertainty in epsilon (U_eps) is:.........." ES14.6, "        ||")
     WRITE(*,100) Udiff
-100 FORMAT(" || Uncertainty in D (U_diff) is:..............." ES14.6, "        ||")
+100 FORMAT(" || Uncertainty in D (U_diff) is:..............." ES14.6, " mm^2/s ||")
+    WRITE(*,110) Udiff_95
+110 FORMAT(" || Uncertainty in D (95% conf interval):......." ES14.6, " mm^2/s ||")
     WRITE(*,*) " ----------------------------------------------------------------------"      
 
 END PROGRAM asymTheoryDiffusivity

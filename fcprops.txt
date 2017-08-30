@@ -2,13 +2,13 @@
 .    Header for input file containing experimental
 .	 measurements for dc, do, yo, p, etc...
 ...................................................................................
-1.0				 	 !chamber pressure [atm]
-8.828062202	 !dc_sq, drop diameter squared at onset of flame contraction [mm^2] 
-0.664302482 	 !K, burning rate on onset of flame contraction [mm^2/s]
+1.0				!chamber pressure [atm]
+8.828062202	 	!dc_sq, drop diameter squared at onset of flame contraction [mm^2] 
+0.664302482 	!K, burning rate on onset of flame contraction [mm^2/s]
 3.731	 		!do_measured = initial droplet diameter measured [mm]
-0.20 		     !yo=initial low volatility mass fraction
-1.0D-12			 !err_tol = error tolerance for norms
+0.20 		    !yo=initial low volatility mass fraction
+1.0D-12			!err_tol = error tolerance for norms
 0.037223011 	!Uncertainty in K (mm^2/s)
-0.1				!Uncertainty in d_o (mm)
-0.1				!Uncertainty in d_c (mm)
-0.02			!uncertainty in Yo percentage
+0.1				!Uncertainty in measurement of d_o (mm)
+0.1				!Uncertainty in measurement of d_c (mm)
+0.02			!relative uncertainty in Yo e.g. U_Yo/Yo (percent) 
