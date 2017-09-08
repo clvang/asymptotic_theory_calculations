@@ -137,9 +137,14 @@ PROGRAM asymTheoryDiffusivity
                         SQRT(UYo_sq), y_ofc, err_tol, &
                         dc_mc, do_mc, yo_mc, tau_mc, LHS_mc, eps_mc, 1000000, & 
                         K, SQRT(Uk_sq), K_mc, D_mc )
-    ! DO i=1,100
-    !     WRITE(*,'(e14.8,2x,e14.6,2x,e14.6)') D_mc(i), eps_mc(i)
+
+    ! OPEN(UNIT=20,FILE='eps_mc_valuest')
+    ! WRITE(20,*) "dc_mc, do_mc,  yo_mc, tau_mc, LHS_mc, eps_mc, K_mc, D_mc"
+    ! DO i=1,1000000 
+    !     WRITE(20,*) dc_mc(i), do_mc(i), yo_mc(i), tau_mc(i), LHS_mc(i), eps_mc(i), K_mc(i), D_mc(i)
     ! END DO
+    ! CLOSE(UNIT = 20)    
+
     WRITE(*,*) ".......PROGRAM COMPLETED RUNNING......."
 END PROGRAM asymTheoryDiffusivity
 
