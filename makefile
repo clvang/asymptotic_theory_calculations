@@ -7,7 +7,9 @@ OBJS=	Fx_Eval.o 	\
 	partialF_partial_dY.o	\
 	partialF_partial_dc.o	\
 	partialF_partial_do.o	\
-	uncertainty_diffusivity.o
+	uncertainty_diffusivity.o 	\
+	normal.o 	\
+	mc_uncertainty.o 	
 
 FC= gfortran 
 
@@ -16,9 +18,6 @@ asymTheoryDiffusivity: $(OBJS)
 
 Fx_Eval.o:Fx_Eval.f90
 	$(FC) -c Fx_Eval.f90
-
-asymTheoryDiffusivity.o:asymTheoryDiffusivity.f90
-	$(FC) -c asymTheoryDiffusivity.f90
 
 bisection.o:bisection.f90
 	$(FC) -c bisection.f90
@@ -41,7 +40,16 @@ partialF_partial_do.o:partialF_partial_do.f90
 uncertainty_diffusivity.o:uncertainty_diffusivity.f90
 	$(FC) -c uncertainty_diffusivity.f90
 
+normal.o:normal.f90
+	$(FC) -c normal.f90
+
+mc_uncertainty.o:mc_uncertainty.f90
+	$(FC) -c mc_uncertainty.f90
+
+asymTheoryDiffusivity.o:asymTheoryDiffusivity.f90
+	$(FC) -c asymTheoryDiffusivity.f90
+
 clean:
-	rm $(OBJS)
+	rm $(OBJS) *.so
 
 #End of makefile

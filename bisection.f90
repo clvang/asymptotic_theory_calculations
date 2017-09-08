@@ -31,10 +31,9 @@ SUBROUTINE bisection(tau, LHS, err_tol, p)
             ELSE 
                 b = p 
             END IF 
-
-            WRITE(*,20) i, ABS(f_p)
-20          FORMAT(' ',"iteration count:" I3,  "   f(epsilon):" ES14.6)	
         END DO 
+            ! WRITE(*,20) i, ABS(f_p)
+! 20          FORMAT(' ',"iteration count:" I3,  "   f(epsilon):" ES14.6)         
     END IF 
 
 END SUBROUTINE bisection

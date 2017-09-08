@@ -1,2 +1,3 @@
 # object files from compilation
 *.o
+*.os

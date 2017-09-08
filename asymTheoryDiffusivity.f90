@@ -19,6 +19,8 @@ PROGRAM asymTheoryDiffusivity
     CHARACTER(len=11) :: filename
     CHARACTER(len=100) :: junk
     INTEGER :: i, status, N
+    REAL(KIND=8), DIMENSION(1000000) :: dc_mc, do_mc, yo_mc, tau_mc, LHS_mc, & 
+                                        eps_mc, K_mc, D_mc
 
     !Get the file name and echo back to user
     ! WRITE(*,*) "Enter the name of the file with experimental measurements: "
@@ -122,7 +124,22 @@ PROGRAM asymTheoryDiffusivity
 100 FORMAT(" || Uncertainty in D (U_diff) is:..............." ES14.6, " mm^2/s ||")
     WRITE(*,110) Udiff_95
 110 FORMAT(" || Uncertainty in D (95% conf interval):......." ES14.6, " mm^2/s ||")
+    WRITE(*,120) (Udiff_95 / D) * 100
+120 FORMAT(" || Relative error in D (95% conf interval):...." ES14.6, " %      ||")
     WRITE(*,*) " ----------------------------------------------------------------------"      
 
+! SUBROUTINE mc_uncertainty( dc_mu, dc_sigma, do_mu, do_sigma, yo_mu, & 
+!                         yo_sigma, y_ofc, err_tol, &
+!                         dc_mc_out, do_mc_out, yo_mc_out, tau_mc_out, LHS_mc_out, eps_mc, & 
+!                         NR, K_mu, dK_sigma, K_mc_out )
+
+    CALL mc_uncertainty(d_c, SQRT(Udc_sq), d_o, SQRT(Udo_sq), yo, & 
+                        SQRT(UYo_sq), y_ofc, err_tol, &
+                        dc_mc, do_mc, yo_mc, tau_mc, LHS_mc, eps_mc, 1000000, & 
+                        K, SQRT(Uk_sq), K_mc, D_mc )
+    ! DO i=1,100
+    !     WRITE(*,'(e14.8,2x,e14.6,2x,e14.6)') D_mc(i), eps_mc(i)
+    ! END DO
+    WRITE(*,*) ".......PROGRAM COMPLETED RUNNING......."
 END PROGRAM asymTheoryDiffusivity
 
