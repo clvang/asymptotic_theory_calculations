@@ -75,22 +75,30 @@ returnedValues <- calcRoot(d_c =sqrt(dc_sq), Udc=sqrt(Udc_sq),
 
 # hist(returnedValues$do_mcVals)
 # hist(returnedValues$D_mcVals)
-D_lower <- quantile(returnedValues$D_mcVals,probs=c((1-P)/2,(1+P)/2))[[1]]
-D_upper <- quantile(returnedValues$D_mcVals,probs=c((1-P)/2,(1+P)/2))[[2]]
-D_bar <- mean(returnedValues$D_mcVals)
-d <- density(returnedValues$D_mcVals)
+D_lower <- quantile(returnedValues$D_mcVals,probs=c((1-P)/2,(1+P)/2))[[1]] * (1/1000)^2
+D_upper <- quantile(returnedValues$D_mcVals,probs=c((1-P)/2,(1+P)/2))[[2]] * (1/1000)^2
+D_bar <- mean(returnedValues$D_mcVals * (1/1000)^2)
+d <- density(returnedValues$D_mcVals * (1/1000)^2)
 
 D_most_probable <- d$x[which(d$y==max(d$y))]
 
-print(paste0("MC lower D limit: ", D_lower) )
-print(paste0("MC most probable D: ", D_most_probable))
-print(paste0("MC upper D limit: ", D_upper))
+
+print("MC lower D limit [m^2/s]: ")
+print(D_lower)
+print("MC most probable D [m^2/s]: ")
+print(D_most_probable)
+print("MC upper D limit [m^2/s]: ")
+print(D_upper)
+
+# print(paste0("MC lower D limit: ", D_lower) )
+# print(paste0("MC most probable D: ", D_most_probable))
+# print(paste0("MC upper D limit: ", D_upper))
 
 
-hist(returnedValues$D_mcVals,prob=TRUE,n=100,  
+hist(returnedValues$D_mcVals*(1/1000)^2,prob=TRUE,n=100,  
 	main=paste0("Histogram of D effective"),
-	xlab="D [mm^2/s]")
-d <-density(returnedValues$D_mcVals)
+	xlab="D [m^2/s]")
+d <-density(returnedValues$D_mcVals*(1/1000)^2)
 lines(d,col="black",lwd=2)
 abline(v=D_upper,col='red',lwd=1.5,lty="dashed")
 abline(v=D_lower,col='red',lwd=1.5,lty="dotted")

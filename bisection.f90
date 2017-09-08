@@ -10,7 +10,7 @@ SUBROUTINE bisection(tau, LHS, err_tol, p)
     REAL(KIND=8) :: a, b, f_p, f_a, f_b 
     INTEGER :: maxit, i 
 
-    a = 1.0E-05
+    a = 1.0E-07
     b = 1.0
     CALL Fx_eval(tau, a, LHS, f_a)
     CALL Fx_eval(tau, b, LHS, f_b) 
