@@ -14,7 +14,8 @@ PROGRAM asymTheoryDiffusivity
     REAL(KIND=8) :: dc_sq, K, do_measured, p, yo, d_c, y_ofc, percent_increase, &
         d_o, tau, LHS, D, err_tol, ep_min, ep_max, dfdo, epsilon_bisect, dfdc, &
         dfdY, Uk_sq, Udo_sq, Udc_sq, UYo_sq, Ueps, Udiff, Udiff_95
-    REAL(KIND=8), DIMENSION(10) :: fc_props
+    INTEGER :: sol_id
+    REAL(KIND=8), DIMENSION(11) :: fc_props
     REAL(KIND=8), DIMENSION(700) :: fvalues, ep_vals
     CHARACTER(len=11) :: filename
     CHARACTER(len=100) :: junk
@@ -42,7 +43,7 @@ PROGRAM asymTheoryDiffusivity
             READ(1,*,IOSTAT=status) junk
         END DO readjunkLines
 
-        readData: DO i=1,10 					!read lines 5-9
+        readData: DO i=1,11 					!read lines 5-9
             READ(1,*,IOSTAT=status) fc_props(i)
         END DO readData
 
@@ -56,6 +57,7 @@ PROGRAM asymTheoryDiffusivity
         Udo_sq      = fc_props(8)**2 ! uncertainty in do squared (U_do^2) [mm^2]
         Udc_sq      = fc_props(9)**2 ! uncertainty in dc squared (U_dc^2) [mm^2]
         UYo_sq      = (fc_props(10)*yo)**2 !uncertainty in Yo squared
+        sol_id      = fc_props(11)   ! solvent id (1)-Heptane (2)-Propanol
         CLOSE(UNIT=1)
     ELSE
         WRITE(*,*) 'Open of file NOT sucessful!'
@@ -64,11 +66,24 @@ PROGRAM asymTheoryDiffusivity
     d_c    = SQRT(dc_sq)   ! drop diameter at onset of flame contraction [mm]
     y_ofc = 1.0 		   ! mass fraction of low volatility comp at onset of fc
 
-    IF (p == 1) THEN
-        percent_increase = 0.055  !so far these numbers are only valid for hep-hex exp's
-    ELSE
-        percent_increase = 0.086
+    ! correct d_o for heptane-hexadecane droplets
+    IF (sol_id == 1) THEN
+        IF (p == 1) THEN
+            percent_increase = 0.055  !so far these numbers are only valid for hep-hex exp's
+        ELSE
+            percent_increase = 0.086
+        ENDIF
     ENDIF
+
+    ! correct d_o for propanol-glycerol droplets
+    IF (sol_id == 2) THEN
+        IF (p == 1) THEN
+            percent_increase = 0.03  
+        ELSE
+            percent_increase = 0.05
+        ENDIF
+    ENDIF 
+
     d_o = do_measured * (1.0 + percent_increase) !do accounting for droplet swelling
     tau = LOG(d_o / d_c)
     LHS = y_ofc / yo

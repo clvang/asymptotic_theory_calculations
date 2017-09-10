@@ -37,7 +37,7 @@ if (!is.loaded('mc_uncertainty')){
 }
 
 # read data from fcprops.txt file
-data_import <- read.table('fcprops.txt',skip=4,nrows=10, sep="!")
+data_import <- read.table('fcprops.txt',skip=4,nrows=11, sep="!")
 data_numeric <- as.numeric(as.character(data_import$V1[seq(1,10)]))
 
 p 			<- data_numeric[1]    # chamber pressure [atm]
@@ -50,14 +50,30 @@ Uk_sq       <- data_numeric[7]^2  # uncertainty in K squared (U_k ^2) [mm^2/s]^2
 Udo_sq      <- data_numeric[8]^2  # uncertainty in do squared (U_do^2) [mm^2]
 Udc_sq      <- data_numeric[9]^2  # uncertainty in dc squared (U_dc^2) [mm^2]
 UYo_sq      <- (data_numeric[10]*yo)^2  #uncertainty in Yo squared
+sol_id      <- data_import$V1[11] #solvent id (1) - Heptane (2)- Propanol
+
 
 y_ofc <- 1.0  # (defined) mass fraction of low volatility comp at onset of fc
 
-if (p == 1) {
-    percent_increase <- 0.055  #so far these numbers are only valid for hep-hex exp's
-} else {
-    percent_increase <- 0.086
+if (sol_id == 1){
+	# heptane-hexadecane d_o corrections
+	if (p == 1) {
+	    percent_increase <- 0.055  #so far these numbers are only valid for hep-hex exp's
+	} else {
+	    percent_increase <- 0.086
+	}	
 }
+
+if (sol_id == 2){
+	# propanol-glycerol d_o corrections
+	if (p == 1) {
+	    percent_increase <- 0.03  #
+	} else {
+	    percent_increase <- 0.05  #at 3 atm
+	}
+}
+
+
 d_o <- do_measured * (1.0 + percent_increase) #do accounting for droplet swelling
 tau_o <- log(d_o / sqrt(dc_sq) )
 
