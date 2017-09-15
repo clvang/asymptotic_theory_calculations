@@ -150,10 +150,10 @@ PROGRAM asymTheoryDiffusivity
 !                         dc_mc_out, do_mc_out, yo_mc_out, tau_mc_out, LHS_mc_out, eps_mc, & 
 !                         NR, K_mu, dK_sigma, K_mc_out )
 
-    CALL mc_uncertainty(d_c, SQRT(Udc_sq), d_o, SQRT(Udo_sq), yo, & 
-                        SQRT(UYo_sq), y_ofc, err_tol, &
-                        dc_mc, do_mc, yo_mc, tau_mc, LHS_mc, eps_mc, 1000000, & 
-                        K, SQRT(Uk_sq), K_mc, D_mc )
+    ! CALL mc_uncertainty(d_c, SQRT(Udc_sq), d_o, SQRT(Udo_sq), yo, & 
+    !                     SQRT(UYo_sq), y_ofc, err_tol, &
+    !                     dc_mc, do_mc, yo_mc, tau_mc, LHS_mc, eps_mc, 1000000, & 
+    !                     K, SQRT(Uk_sq), K_mc, D_mc )
 
     ! OPEN(UNIT=20,FILE='eps_mc_valuest')
     ! WRITE(20,*) "dc_mc, do_mc,  yo_mc, tau_mc, LHS_mc, eps_mc, K_mc, D_mc"
