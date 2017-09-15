@@ -135,10 +135,12 @@ PROGRAM asymTheoryDiffusivity
 80  FORMAT(" || Sensitivity in y_o (df_yo) is:.............." ES14.6, "        ||")
     WRITE(*,90) Ueps
 90  FORMAT(" || Uncertainty in epsilon (U_eps) is:.........." ES14.6, "        ||")
-    WRITE(*,100) Udiff
-100 FORMAT(" || Uncertainty in D (U_diff) is:..............." ES14.6, " mm^2/s ||")
+!     WRITE(*,100) Udiff
+! 100 FORMAT(" || Uncertainty in D (U_diff) is:..............." ES14.6, " mm^2/s ||")
     WRITE(*,110) Udiff_95
 110 FORMAT(" || Uncertainty in D (95% conf interval):......." ES14.6, " mm^2/s ||")
+    WRITE(*,112) Udiff_95*(1.0/1000.)**2.
+112 FORMAT(" || Uncertainty in D (95% conf interval):......." ES14.6, "  m^2/s ||")
     WRITE(*,120) (Udiff_95 / D) * 100
 120 FORMAT(" || Relative error in D (95% conf interval):...." ES14.6, " %      ||")
     WRITE(*,*) " ----------------------------------------------------------------------"      
