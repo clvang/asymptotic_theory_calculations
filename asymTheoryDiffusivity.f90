@@ -13,7 +13,7 @@ PROGRAM asymTheoryDiffusivity
 
     REAL(KIND=8) :: dc_sq, K, do_measured, p, yo, d_c, y_ofc, percent_increase, &
         d_o, tau, LHS, D, err_tol, ep_min, ep_max, dfdo, epsilon_bisect, dfdc, &
-        dfdY, Uk_sq, Udo_sq, Udc_sq, UYo_sq, Ueps, Udiff, Udiff_95
+        dfdY, Uk_sq, Udo_sq, Udc_sq, UYo_sq, Ueps, Udiff, Udiff_95, window
     INTEGER :: sol_id
     REAL(KIND=8), DIMENSION(11) :: fc_props
     REAL(KIND=8), DIMENSION(700) :: fvalues, ep_vals
@@ -66,13 +66,28 @@ PROGRAM asymTheoryDiffusivity
     d_c    = SQRT(dc_sq)   ! drop diameter at onset of flame contraction [mm]
     y_ofc = 1.0 		   ! mass fraction of low volatility comp at onset of fc
 
-    ! correct d_o for heptane-hexadecane droplets
+    ! correct d_o for heptane-hexadecane droplets (95/5 droplets only!)
+    window = 0.01           ! 1 % window
     IF (sol_id == 1) THEN
-        IF (p == 1) THEN
-            percent_increase = 0.055  !so far these numbers are only valid for hep-hex exp's
-        ELSE
-            percent_increase = 0.086
-        ENDIF
+
+        IF ( yo < (1+window)*0.05 .AND. yo >(1-window)*0.05 ) THEN
+            ! these are corrections for hep95/hex5 only!
+            IF (p == 1) THEN
+                percent_increase = 0.055  
+            ELSE
+                percent_increase = 0.086
+            ENDIF
+        END IF
+
+        IF ( yo < (1+window)*0.20 .AND. yo > (1-window)*0.20 ) THEN  
+            ! these are corrections for hep80/hex20 only!
+            IF (p == 1) THEN
+                percent_increase = 0.047  
+            ELSE
+                percent_increase = 0.076
+            ENDIF
+        END IF
+
     ENDIF
 
     ! correct d_o for propanol-glycerol droplets
@@ -105,13 +120,16 @@ PROGRAM asymTheoryDiffusivity
     END DO
     CLOSE(UNIT = 10)
     !call gnuplot through shell to plot results
-    CALL SYSTEM('gnuplot -p data_plot.plt')
+    ! CALL SYSTEM('gnuplot -p data_plot.plt')
 
     !!!!!!!!!!!!!!!!!!!! CALCULATE UNCERTAINTIES IN D USING TSM !!!!!!!!!!!!!!!!!!!!!!
     !calculate df_do
     CALL partialF_partial_do(d_o, dfdo, d_c, yo, y_ofc, err_tol)
     CALL partialF_partial_dc(d_o, dfdc, d_c, yo, y_ofc, err_tol)  
     CALL partialF_partial_dY(d_o, dfdY, d_c, yo, y_ofc, err_tol)  
+
+    WRITE(*,22) percent_increase*100
+22  FORMAT("-------- d_o has been increase by: " ES14.6, " percent --------")
 
     WRITE(*,*) " ==================== Bisection Iteration Results ====================="
     WRITE(*,54) epsilon_bisect
@@ -135,8 +153,10 @@ PROGRAM asymTheoryDiffusivity
 80  FORMAT(" || Sensitivity in y_o (df_yo) is:.............." ES14.6, "        ||")
     WRITE(*,90) Ueps
 90  FORMAT(" || Uncertainty in epsilon (U_eps) is:.........." ES14.6, "        ||")
-!     WRITE(*,100) Udiff
-! 100 FORMAT(" || Uncertainty in D (U_diff) is:..............." ES14.6, " mm^2/s ||")
+    WRITE(*,100) Udiff
+100 FORMAT(" || Uncertainty in D (U_diff) is:..............." ES14.6, " mm^2/s ||")
+    WRITE(*,102) Udiff*(1.0/1000.)**2.
+102 FORMAT(" || Uncertainty in D (U_diff) is:..............." ES14.6, "  m^2/s ||")
     WRITE(*,110) Udiff_95
 110 FORMAT(" || Uncertainty in D (95% conf interval):......." ES14.6, " mm^2/s ||")
     WRITE(*,112) Udiff_95*(1.0/1000.)**2.
@@ -144,7 +164,6 @@ PROGRAM asymTheoryDiffusivity
     WRITE(*,120) (Udiff_95 / D) * 100
 120 FORMAT(" || Relative error in D (95% conf interval):...." ES14.6, " %      ||")
     WRITE(*,*) " ----------------------------------------------------------------------"      
-
 ! SUBROUTINE mc_uncertainty( dc_mu, dc_sigma, do_mu, do_sigma, yo_mu, & 
 !                         yo_sigma, y_ofc, err_tol, &
 !                         dc_mc_out, do_mc_out, yo_mc_out, tau_mc_out, LHS_mc_out, eps_mc, & 

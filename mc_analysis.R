@@ -2,6 +2,10 @@
 rm(list=ls(all=TRUE))   #remove all variables in  workspace
 
 calcRoot <- function(d_c, Udc, d_o, Udo, yo, UYo, y_ofc, err_tol, N, K, UK){
+# SUBROUTINE mc_uncertainty( dc_mu, dc_sigma, do_mu, do_sigma, yo_mu, & 
+# 						yo_sigma, y_ofc, err_tol, &
+# 						dc_mc_out, do_mc_out, yo_mc_out, tau_mc_out, LHS_mc_out, eps_mc, & 
+# 						NR, K_mu, dK_sigma, K_mc_out, D_mc )	
 	retvals <- .Fortran("mc_uncertainty",dc_mu=as.double(d_c), 
 				dc_sigma = as.double(Udc), 
 				do_mu = as.double(d_o),
@@ -20,8 +24,8 @@ calcRoot <- function(d_c, Udc, d_o, Udo, yo, UYo, y_ofc, err_tol, N, K, UK){
 				K_mu = as.double(K),
 				dK_sigma = as.double(UK),
 				K_mc_out = double(N),
-				D_mc = double(N)
-				)
+				D_mc = double(N) )
+	#there are the returned values
 	list(dc_mcVals=retvals$dc_mc_out,
 		do_mcVals=retvals$do_mc_out,
 		yo_mcVals=retvals$yo_mc_out,
@@ -56,12 +60,24 @@ sol_id      <- data_import$V1[11] #solvent id (1) - Heptane (2)- Propanol
 y_ofc <- 1.0  # (defined) mass fraction of low volatility comp at onset of fc
 
 if (sol_id == 1){
-	# heptane-hexadecane d_o corrections
-	if (p == 1) {
-	    percent_increase <- 0.055  #so far these numbers are only valid for hep-hex exp's
-	} else {
-	    percent_increase <- 0.086
-	}	
+
+	if ( yo == 0.05){
+		# heptane95-hexadecane5 d_o corrections
+		if (p == 1) {
+		    percent_increase <- 0.055  #so far these numbers are only valid for hep-hex exp's
+		} else {
+		    percent_increase <- 0.086
+		}	
+	}
+	if ( yo == 0.20){
+		# heptane80-hexadecane20 d_o corrections
+		if (p == 1) {
+		    percent_increase <- 0.047  
+		} else {
+		    percent_increase <- 0.076
+		}	
+	}
+
 }
 
 if (sol_id == 2){
@@ -98,6 +114,8 @@ d <- density(returnedValues$D_mcVals * (1/1000)^2)
 
 D_most_probable <- d$x[which(d$y==max(d$y))]
 
+print("do percent_increase :")
+print(percent_increase)
 
 print("MC lower D limit [m^2/s]: ")
 print(D_lower)

@@ -40,6 +40,7 @@ SUBROUTINE mc_uncertainty( dc_mu, dc_sigma, do_mu, do_sigma, yo_mu, &
   yofc_k4 = REAL( y_ofc, KIND(yofc_k4) )
   seed = 5
 
+  ! genreate random variables
   DO i = 1, NR
     do_mc(i) = r4_normal_ab ( do_mu_k4, do_sigma_k4, seed )
     yo_mc(i) = r4_normal_ab ( yo_mu_k4, yo_sigma_k4, seed )
