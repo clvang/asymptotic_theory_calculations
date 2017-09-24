@@ -90,9 +90,9 @@ set.seed(5)
 Yo_mcN95 <- rnorm( n=N, mean=yo, sd=sqrt(UYo_sq) )
 
 LHS_mcN95 <- y_ofc / Yo_mcN95
-dc_mcN95 <- 1
 ## sample larger than needed values for dc
 ## then throw out-of-range values away, element-wise
+dc_mcN95 <- 1
 i <- 5
 while(length(dc_mcN95) < N){
 	set.seed(i)
@@ -101,31 +101,31 @@ while(length(dc_mcN95) < N){
 	dc_mcN95 <- dc_mcN95[index]
 	i <- i + 1
 }
-dc_mcN95seed <- i
+dc_mcN95seed <- i-1   #store seed for future debug/reproducibility purposes
 
-dc_mcN95 <- dc_mcN95[1:N]
+dc_mcN95 <- dc_mcN95[1:N]   #select only N values from the within range values
 do_mcN95 <- do_temp[index]
 do_mcN95 <- do_mcN95[1:N]
-tau_mcN95 <- log(do_mcN95 / dc_mcN95)
+tau_mcN95 <- log(do_mcN95 / dc_mcN95) # tau > 0
 ## sample larger than needed values for K
 ## then throw out-of-range values away
 set.seed(5)
 K_temp <- rnorm(n=N*factor, mean= K, sd= sqrt(Uk_sq))
 K_mcN95 <- 1
 i <- 5
-while( length(K_mcN95)<N ){
+while( length(K_mcN95) < N ){
 	set.seed(i)	
 	K_mcN95 <- rnorm(n=N*factor, mean= K, sd= sqrt(Uk_sq))
 	K_mcN95 <- K_mcN95[which( K_mcN95 > 0)]
 	i <- i + 1	
 }
-K_mcN95seed <- i
+K_mcN95seed <- i-1
 K_mcN95 <- K_mcN95[1:N]
 #------------------------------------------------------------ ###
 
 
 
-#---- generate NORMAL random variables for STANDARD uncertianties --- ###
+#---- generate random variables from NORMAL to calculate STANDARD uncertianties --- ###
 ## convert 95% uncertainties to standard deviations
 cf <- 2.0
 sigma_do <- sqrt(Udo_sq) / cf
@@ -144,14 +144,14 @@ dc_mcNS <- 1
 ## sample larger than needed values for dc
 ## then throw out-of-range values away, element-wise
 i <- 5
-while(length(dc_mcNS) < N){
+while( length(dc_mcNS) < N ){
 	set.seed(i)
 	dc_mcNS <- rnorm(n=N*factor, mean = sqrt(dc_sq), sd=sigma_dc )
 	index <- which(do_temp > dc_mcNS)
 	dc_mcNS <- dc_mcNS[index]
 	i <- i + 1
 }
-dc_mcNSseed <- i
+dc_mcNSseed <- i-1
 
 dc_mcNS <- dc_mcNS[1:N]
 do_mcNS <- do_temp[index]
@@ -169,7 +169,7 @@ while( length(K_mcNS) < N ){
 	K_mcNS <- K_mcNS[ which( K_mcNS > 0) ]
 	i <- i + 1
 }
-K_mcNSseed <- i 
+K_mcNSseed <- i-1
 K_mcNS <- K_mcNS[1:N]
 # dev.new()
 # hist(dc_mcNS, prob=TRUE, n=100)
@@ -191,7 +191,7 @@ sigma_dc <- (dc_max - dc_min) / sqrt(12)
 
 K_max <- K + sqrt(Uk_sq)
 K_min <- K - sqrt(Uk_sq)
-sigma_K <- 2*sqrt(Uk_sq) / sqrt(12)
+sigma_K <- (K_max - K_min) / sqrt(12)
 
 Y_max <- yo + sqrt(UYo_sq)
 Y_min <- yo - sqrt(UYo_sq)
@@ -206,7 +206,7 @@ LHS_mcUS <- y_ofc / Yo_mcUS
 ## sample larger than needed values for dc
 ## then throw out-of-range values away, element-wise
 dc_mcUS <- 1
-i <- 6
+i <- 5
 while( length(dc_mcUS) < N){
 	set.seed(i)
 	dc_mcUS <- runif(n=N*factor,min=dc_min,max=dc_max )
@@ -214,13 +214,12 @@ while( length(dc_mcUS) < N){
 	dc_mcUS <- dc_mcUS[index]
 	i <- i + 1
 }
-dc_mcUSseed <- i 
+dc_mcUSseed <- i-1
 dc_mcUS <- dc_mcUS[1:N]
 do_mcUS <- do_temp[index]
 do_mcUS <- do_mcUS[1:N]
 tau_mcUS <- log(do_mcUS / dc_mcUS)
-## sample larger than needed values for K
-## then throw out-of-range values away
+## sample K s.t. K > 0
 if (K_min < 0){
 	K_min <- 0
 }
