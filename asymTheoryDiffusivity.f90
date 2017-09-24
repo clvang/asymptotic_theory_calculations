@@ -13,7 +13,7 @@ PROGRAM asymTheoryDiffusivity
 
     REAL(KIND=8) :: dc_sq, K, do_measured, p, yo, d_c, y_ofc, percent_increase, &
         d_o, tau, LHS, D, err_tol, ep_min, ep_max, dfdo, epsilon_bisect, dfdc, &
-        dfdY, Uk_sq, Udo_sq, Udc_sq, UYo_sq, Ueps, Udiff, Udiff_95, window
+        dfdY, Uk_sq, Udo_sq, Udc_sq, UYo_sq, Ueps, Udiff, window
     INTEGER :: sol_id
     REAL(KIND=8), DIMENSION(11) :: fc_props
     REAL(KIND=8), DIMENSION(700) :: fvalues, ep_vals
@@ -142,7 +142,7 @@ PROGRAM asymTheoryDiffusivity
     WRITE(*,*) " ====================================================================="  
 
     CALL uncertainty_diffusivity(dfdo, Udo_sq, dfdc, Udc_sq, dfdY, UYo_sq, D, Uk_sq, &
-                                K, epsilon_bisect, Ueps, Udiff, Udiff_95)
+                                K, epsilon_bisect, Ueps, Udiff)
 
     WRITE(*,*) " ------------------------ Equation Sensitivies ------------------------"
     WRITE(*,60) dfdo
@@ -154,32 +154,16 @@ PROGRAM asymTheoryDiffusivity
     WRITE(*,90) Ueps
 90  FORMAT(" || Uncertainty in epsilon (U_eps) is:.........." ES14.6, "        ||")
     WRITE(*,100) Udiff
-100 FORMAT(" || Uncertainty in D (U_diff) is:..............." ES14.6, " mm^2/s ||")
+100 FORMAT(" || Uncertainty in D (95% conf interval):......." ES14.6, " mm^2/s ||")
     WRITE(*,102) Udiff*(1.0/1000.)**2.
-102 FORMAT(" || Uncertainty in D (U_diff) is:..............." ES14.6, "  m^2/s ||")
-    WRITE(*,110) Udiff_95
-110 FORMAT(" || Uncertainty in D (95% conf interval):......." ES14.6, " mm^2/s ||")
-    WRITE(*,112) Udiff_95*(1.0/1000.)**2.
-112 FORMAT(" || Uncertainty in D (95% conf interval):......." ES14.6, "  m^2/s ||")
-    WRITE(*,120) (Udiff_95 / D) * 100
+102 FORMAT(" || Uncertainty in D (95% conf interval):......." ES14.6, "  m^2/s ||")
+!     WRITE(*,110) Udiff_95
+! 110 FORMAT(" || Uncertainty in D (95% conf interval):......." ES14.6, " mm^2/s ||")
+!     WRITE(*,112) Udiff_95*(1.0/1000.)**2.
+! 112 FORMAT(" || Uncertainty in D (95% conf interval):......." ES14.6, "  m^2/s ||")
+    WRITE(*,120) (Udiff / D) * 100
 120 FORMAT(" || Relative error in D (95% conf interval):...." ES14.6, " %      ||")
     WRITE(*,*) " ----------------------------------------------------------------------"      
-! SUBROUTINE mc_uncertainty( dc_mu, dc_sigma, do_mu, do_sigma, yo_mu, & 
-!                         yo_sigma, y_ofc, err_tol, &
-!                         dc_mc_out, do_mc_out, yo_mc_out, tau_mc_out, LHS_mc_out, eps_mc, & 
-!                         NR, K_mu, dK_sigma, K_mc_out )
-
-    ! CALL mc_uncertainty(d_c, SQRT(Udc_sq), d_o, SQRT(Udo_sq), yo, & 
-    !                     SQRT(UYo_sq), y_ofc, err_tol, &
-    !                     dc_mc, do_mc, yo_mc, tau_mc, LHS_mc, eps_mc, 1000000, & 
-    !                     K, SQRT(Uk_sq), K_mc, D_mc )
-
-    ! OPEN(UNIT=20,FILE='eps_mc_valuest')
-    ! WRITE(20,*) "dc_mc, do_mc,  yo_mc, tau_mc, LHS_mc, eps_mc, K_mc, D_mc"
-    ! DO i=1,1000000 
-    !     WRITE(20,*) dc_mc(i), do_mc(i), yo_mc(i), tau_mc(i), LHS_mc(i), eps_mc(i), K_mc(i), D_mc(i)
-    ! END DO
-    ! CLOSE(UNIT = 20)    
 
     WRITE(*,*) ".......PROGRAM COMPLETED RUNNING......."
 END PROGRAM asymTheoryDiffusivity

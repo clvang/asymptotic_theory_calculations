@@ -2,8 +2,7 @@
 #shared objects between R and Fortran
 OBJS=	Fx_Eval.o 	\
 	bisection.o 	\
-	mc_uncertainty.o 	\
-	normal.o 
+	mc_uncertainty.o
 
 FC= gfortran 
 
@@ -15,9 +14,6 @@ Fx_Eval.o:Fx_Eval.f90
 
 bisection.o:bisection.f90
 	$(FC) -c bisection.f90
-
-normal.o:normal.f90
-	$(FC) -c normal.f90
 
 mc_uncertainty.o:mc_uncertainty.f90 
 	$(FC) -c mc_uncertainty.f90

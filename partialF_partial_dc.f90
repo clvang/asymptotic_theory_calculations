@@ -11,7 +11,7 @@ SUBROUTINE partialF_partial_dc(d_o, dfdc_out, d_c, yo, y_ofc, err_tol)
 
     delta_dc(1) = 0.01*d_c
     DO i=1,N 
-        delta_dc(i+1) = 0.01*d_c / ( (i+1)*2.0 )
+        delta_dc(i+1) = 0.01*d_c / ( i * 2.0 )
         dc_1(i) = d_c + delta_dc(i) 
         dc_2(i) = d_c - delta_dc(i)
 
