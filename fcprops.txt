@@ -3,13 +3,13 @@
 .	 measurements for dc, do, yo, p, etc...
 ...................................................................................
 1.0             !chamber pressure [atm]
-4.11198467      !dc_sq, drop diameter squared at onset of flame contraction [mm^2] 
-0.284856146     !K, burning rate on onset of flame contraction [mm^2/s]
-2.116           !do_measured = initial droplet diameter measured [mm]
-0.20            !yo=initial low volatility mass fraction (either Y of hexadecane or glycerol)
+3.046857785        !dc_sq, drop diameter squared at onset of flame contraction [mm^2] 
+0.776759215      !K, burning rate on onset of flame contraction [mm^2/s]
+1.956         !do_measured = initial droplet diameter measured [mm]
+0.05            !yo=initial low volatility mass fraction (either Y of hexadecane or glycerol)
 1.0E-12         !err_tol = error tolerance for norms
-0.109781606     !95% Uncertainty in K (mm^2/s)
+0.10605384    !95% Uncertainty in K (mm^2/s)
 0.1             !95% Uncertainty in measurement of d_o (mm)
 0.1             !95% Uncertainty in measurement of d_c (mm)
 0.02            !95% relative uncertainty in Yo e.g. U_Yo/Yo (percent)
-1               !solvent (1)-Heptane (2)-Propanol 
+2               !solvent (1)-Heptane (2)-Propanol 

@@ -81,7 +81,7 @@ P <- 0.95
 
 print("----- BEGIN random number generation----- ")
 #---- generate NORMAL random variables for 95% uncertianties --- ###
-factor <- 1.25
+factor <- 2
 
 set.seed(5)
 do_temp <- rnorm( n=N*factor, mean=d_o, sd= sqrt(Udo_sq) )
@@ -245,7 +245,7 @@ print("--- results assume dependent variables are from NORMAL distribution ---")
 print("MC 95% uncertainty LOWER D limit [m^2/s]: ")
 print(DN95_lower)
 print("MC 95% uncertainty MEAN value D [m^2/s]: ")
-print(mean(D_N95))
+print(DN95_bar)
 print("MC 95% uncertainty UPPER D limit [m^2/s]: ")
 print(DN95_upper)
 print("MC 95% uncertainty MOST PROBABLE D [m^2/s]: ")
@@ -272,17 +272,17 @@ D_NS <- D_NS * (1/1000)^2  #convert to m^2/s
 DNS_bar <- mean(D_NS)
 sigma_DNS <- sd(D_NS)
 d <- density(D_NS)
-DNS_upper <- DNS_bar + sigma_DNS
-DNS_lower <- DNS_bar - sigma_DNS
+DNS_upper <- DNS_bar + sigma_DNS #(sigma_DNS/sqrt(N))
+DNS_lower <- DNS_bar - sigma_DNS #(sigma_DNS/sqrt(N) )
 D_NS_most_probable <- d$x[which(d$y==max(d$y))]
 
 print("********************************************************************")
 print("--- results assume dependent variables are from NORMAL distribution ---")
-print("MC Standard ERROR -1SD D limit [m^2/s]: ")
+print("MC upper bound Standard ERROR of the MEAN D limit [m^2/s]: ")
 print(DNS_lower)
-print("MC Standard ERROR MEAN value D [m^2/s]: ")
+print("MC MEAN value D [m^2/s]: ")
 print(DNS_bar )
-print("MC Standard ERROR +1SD D limit [m^2/s]: ")
+print("MC lower bound Standard ERROR of the MEAN D limit [m^2/s]: ")
 print(DNS_upper)
 print("MC Standard ERROR MOST PROBABLE D [m^2/s]: ")
 print(D_NS_most_probable)
@@ -309,16 +309,16 @@ D_US <- D_US * (1/1000)^2  #convert to m^2/s
 DUS_bar <- mean(D_US)
 sigma_DUS <- sd(D_US)
 d <- density(D_US)
-DUS_upper <- DUS_bar + sigma_DUS
-DUS_lower <- DUS_bar - sigma_DUS
+DUS_upper <- DUS_bar + sigma_DUS #(sigma_DUS/sqrt(N))
+DUS_lower <- DUS_bar - sigma_DUS #(sigma_DUS/sqrt(N))
 
 print("********************************************************************")
 print("--- results assume dependent variables are from UNIFORM distribution ---")
-print("MC Standard ERROR -1SD D limit [m^2/s]: ")
+print("MC lower bound Standard ERROR of MEAN D limit [m^2/s]: ")
 print(DUS_lower)
-print("MC Standard ERROR MEAN value D [m^2/s]: ")
+print("MC MEAN value D [m^2/s]: ")
 print(DUS_bar )
-print("MC Standard ERROR +1SD D limit [m^2/s]: ")
+print("MC upper bound Standard ERROR of MEAN D limit [m^2/s]: ")
 print(DUS_upper)
 
 
@@ -333,7 +333,11 @@ abline(v=DUS_lower,col='red',lwd=1.5,lty="dotted")
 abline(v=DUS_bar,col='red',lwd=2.3)
 legend("topright", c("MC"), col=c("red"), lwd=2)
 
-
+#print relevant results to screen in a way that is 
+#easy to cut and paste into excel
+print(paste(DN95_lower," ",DN95_bar," ",DN95_upper," ",DN95_most_probable," ",
+			DNS_bar," ",sigma_DNS," ",
+			" ",DUS_bar," ",sigma_DUS) )
 
 
 
