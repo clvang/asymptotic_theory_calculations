@@ -81,7 +81,7 @@ P <- 0.95
 
 print("----- BEGIN random number generation----- ")
 #---- generate NORMAL random variables for 95% uncertianties --- ###
-factor <- 2
+factor <- 2  #this just specifies factor to increase number of random numbers genrated
 
 set.seed(5)
 do_temp <- rnorm( n=N*factor, mean=d_o, sd= sqrt(Udo_sq) )
@@ -240,6 +240,14 @@ DN95_upper <- quantile(D_N95,probs=c((1-P)/2,(1+P)/2))[[2]]
 DN95_bar <- mean(D_N95 )
 d <- density(D_N95)
 DN95_most_probable <- d$x[which(d$y==max(d$y))]
+
+#these values for C091B01 only to generate graphics for paper
+#average and uncertainty values from TSM method
+UD_TSM <- 1.60E-09  		# m^2/s
+Dbar_TSM <- 1.30044E-09 	# m^2/s
+Dupper_TSM <- Dbar_TSM + UD_TSM # m^2/s
+Dlower_TSM <- Dbar_TSM - UD_TSM # m^2/s
+
 print("********************************************************************")
 print("--- results assume dependent variables are from NORMAL distribution ---")
 print("MC 95% uncertainty LOWER D limit [m^2/s]: ")
@@ -251,16 +259,21 @@ print(DN95_upper)
 print("MC 95% uncertainty MOST PROBABLE D [m^2/s]: ")
 print(DN95_most_probable)
 
-hist(D_N95,prob=TRUE,n=100,  
-	main=paste0("95% N Histogram of D effective"),
-	xlab="D [m^2/s]")
+pdf('D_distribution.pdf',width=8, height=5)
+hist(D_N95,prob=TRUE,n=80,  
+	main=paste0("Distribution of D"),
+	xlab="D [m^2/s]", xlim=c(-3.2E-10, 4.0E-09), col="lightgreen")
 d <-density(D_N95)
 lines(d,col="black",lwd=2)
-abline(v=DN95_upper,col='red',lwd=1.5,lty="dashed")
-abline(v=DN95_lower,col='red',lwd=1.5,lty="dotted")
-abline(v=DN95_bar,col='red',lwd=2.3)
-legend("topright", c("MC"), col=c("red"), lwd=2)
-
+abline(v=DN95_upper,col='red',lwd=2.3,lty="dashed")
+abline(v=DN95_lower,col='red',lwd=2.3,lty="dotted")
+abline(v=DN95_bar,col='red',lwd=2.9)
+abline(v=Dupper_TSM,col='blue',lwd=2.3,lty="dashed")
+abline(v=Dlower_TSM,col='blue',lwd=2.3,lty="dotted")
+abline(v=Dbar_TSM,col='blue',lwd=2.9)
+# legend("topright", c("MC"), col=c("red"), lwd=2)
+legend("topright", c("MC","TS"), col=c("red","blue"), lwd=2)
+dev.off()
 
 #---------------- calculate normal standard errors ------------------------ ###
 D_NS <- calcRoot(tau_vector=tau_mcNS, 
