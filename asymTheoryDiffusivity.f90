@@ -15,7 +15,7 @@ PROGRAM asymTheoryDiffusivity
         d_o, tau, LHS, D, err_tol, ep_min, ep_max, dfdo, epsilon_bisect, dfdc, &
         dfdY, Uk_sq, Udo_sq, Udc_sq, UYo_sq, Ueps, Udiff, window
     INTEGER :: sol_id
-    REAL(KIND=8), DIMENSION(11) :: fc_props
+    REAL(KIND=8), DIMENSION(15) :: fc_props
     REAL(KIND=8), DIMENSION(700) :: fvalues, ep_vals
     CHARACTER(len=11) :: filename
     CHARACTER(len=100) :: junk
@@ -43,7 +43,7 @@ PROGRAM asymTheoryDiffusivity
             READ(1,*,IOSTAT=status) junk
         END DO readjunkLines
 
-        readData: DO i=1,11 					!read lines 5-9
+        readData: DO i=1,15 					!read lines 5-19
             READ(1,*,IOSTAT=status) fc_props(i)
         END DO readData
 
@@ -57,7 +57,8 @@ PROGRAM asymTheoryDiffusivity
         Udo_sq      = fc_props(8)**2 ! uncertainty in do squared (U_do^2) [mm^2]
         Udc_sq      = fc_props(9)**2 ! uncertainty in dc squared (U_dc^2) [mm^2]
         UYo_sq      = (fc_props(10)*yo)**2 !uncertainty in Yo squared
-        sol_id      = fc_props(11)   ! solvent id (1)-Heptane (2)-Propanol
+        !notes: lines 15-18 of the fcfprops.txt are needed elsewhere
+        sol_id      = fc_props(15)   ! solvent id (1)-Heptane (2)-Propanol
         CLOSE(UNIT=1)
     ELSE
         WRITE(*,*) 'Open of file NOT sucessful!'
