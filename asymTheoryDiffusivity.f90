@@ -74,18 +74,18 @@ PROGRAM asymTheoryDiffusivity
         IF ( yo < (1+window)*0.05 .AND. yo >(1-window)*0.05 ) THEN
             ! these are corrections for hep95/hex5 only!
             IF (p == 1) THEN
-                percent_increase = 0.055  
+                percent_increase = 0.03
             ELSE
-                percent_increase = 0.086
+                percent_increase = 0.06
             ENDIF
         END IF
 
         IF ( yo < (1+window)*0.20 .AND. yo > (1-window)*0.20 ) THEN  
             ! these are corrections for hep80/hex20 only!
             IF (p == 1) THEN
-                percent_increase = 0.047  
+                percent_increase = 0.03 
             ELSE
-                percent_increase = 0.076
+                percent_increase = 0.06
             ENDIF
         END IF
 
@@ -123,12 +123,6 @@ PROGRAM asymTheoryDiffusivity
     !call gnuplot through shell to plot results
     ! CALL SYSTEM('gnuplot -p data_plot.plt')
 
-    !!!!!!!!!!!!!!!!!!!! CALCULATE UNCERTAINTIES IN D USING TSM !!!!!!!!!!!!!!!!!!!!!!
-    !calculate df_do
-    CALL partialF_partial_do(d_o, dfdo, d_c, yo, y_ofc, err_tol)
-    CALL partialF_partial_dc(d_o, dfdc, d_c, yo, y_ofc, err_tol)  
-    CALL partialF_partial_dY(d_o, dfdY, d_c, yo, y_ofc, err_tol)  
-
     WRITE(*,22) percent_increase*100
 22  FORMAT("-------- d_o has been increase by: " ES14.6, " percent --------")
 
@@ -142,6 +136,11 @@ PROGRAM asymTheoryDiffusivity
 58  FORMAT(" || The effective liquid diffusivity is........." ES14.6, " m^2/s  ||")
     WRITE(*,*) " ====================================================================="  
 
+    !!!!!!!!!!!!!!!!!!!! CALCULATE UNCERTAINTIES IN D USING TSM !!!!!!!!!!!!!!!!!!!!!!
+    !calculate df_do
+    CALL partialF_partial_do(d_o, dfdo, d_c, yo, y_ofc, err_tol)
+    CALL partialF_partial_dc(d_o, dfdc, d_c, yo, y_ofc, err_tol)  
+    CALL partialF_partial_dY(d_o, dfdY, d_c, yo, y_ofc, err_tol)  
     CALL uncertainty_diffusivity(dfdo, Udo_sq, dfdc, Udc_sq, dfdY, UYo_sq, D, Uk_sq, &
                                 K, epsilon_bisect, Ueps, Udiff)
 
