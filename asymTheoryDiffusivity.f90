@@ -137,7 +137,6 @@ PROGRAM asymTheoryDiffusivity
     WRITE(*,*) " ====================================================================="  
 
     !!!!!!!!!!!!!!!!!!!! CALCULATE UNCERTAINTIES IN D USING TSM !!!!!!!!!!!!!!!!!!!!!!
-    !calculate df_do
     CALL partialF_partial_do(d_o, dfdo, d_c, yo, y_ofc, err_tol)
     CALL partialF_partial_dc(d_o, dfdc, d_c, yo, y_ofc, err_tol)  
     CALL partialF_partial_dY(d_o, dfdY, d_c, yo, y_ofc, err_tol)  
